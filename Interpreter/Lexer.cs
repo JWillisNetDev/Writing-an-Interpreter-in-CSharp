@@ -35,15 +35,12 @@ public class Lexer
         {
             return ParseKeyword();
         }
-
         if (IsDigit(_current))
         {
             return ParseNumber();
         }
-
-        Token token = ParseSymbol();
         
-        return token;
+        return ParseSymbol();
     }
     private void SkipWhitespace()
     {
