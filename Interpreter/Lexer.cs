@@ -8,6 +8,11 @@ public class Lexer
     {
         { "fn", TokenType.Function },
         { "let", TokenType.Let },
+        { "if", TokenType.If },
+        { "else", TokenType.Else },
+        { "true", TokenType.True },
+        { "false", TokenType.False },
+        { "return", TokenType.Return }
     };
     public static ImmutableArray<char> WhitespaceChars { get; } = new[] { ' ', '\t', '\r', '\n' }.ToImmutableArray();
 
