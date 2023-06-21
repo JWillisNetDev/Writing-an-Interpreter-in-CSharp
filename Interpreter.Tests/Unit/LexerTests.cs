@@ -1,7 +1,16 @@
+using Xunit.Abstractions;
+
 namespace Interpreter.Tests.Unit;
 
 public class LexerTests
 {
+    private readonly ITestOutputHelper _output;
+
+    public LexerTests(ITestOutputHelper output)
+    {
+        _output = output;
+    }
+    
     [Fact]
     public void MoveNextToken_GivenSymbols_SuccessReturnsTokensFromSymbols()
     {
@@ -70,6 +79,7 @@ public class LexerTests
             new(TokenType.Identifier, "x"),
             new(TokenType.Plus, "+"),
             new(TokenType.Identifier, "y"),
+            new(TokenType.Semicolon, ";"),
             new(TokenType.CloseBrace, "}"),
             new(TokenType.Semicolon, ";"),
 
@@ -91,6 +101,7 @@ public class LexerTests
         {
             var actual = lexer.MoveNext();
             Assert.Equal(token, actual);
+            _output.WriteLine(actual.ToString());
         }
     }
 }

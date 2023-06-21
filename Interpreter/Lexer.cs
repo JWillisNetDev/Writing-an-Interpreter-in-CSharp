@@ -1,7 +1,16 @@
+using System.Collections.Immutable;
+
 namespace Interpreter;
 
 public class Lexer
 {
+    public static IReadOnlyDictionary<string, TokenType> Keywords { get; } = new Dictionary<string, TokenType>
+    {
+        { "fn", TokenType.Function },
+        { "let", TokenType.Let },
+    };
+    public static ImmutableArray<char> WhitespaceChars { get; } = new[] { ' ', '\t', '\r', '\n' }.ToImmutableArray();
+
     public string Input { get; }
 
     private int _position; // The current position being read
@@ -16,27 +25,74 @@ public class Lexer
 
     public Token MoveNext()
     {
-        Token token = _current switch
+        SkipWhitespace();
+        if (IsLetterOrUnderscore(_current))
         {
-            '=' => new(TokenType.Assign, _current.ToString()),
-            ';' => new(TokenType.Semicolon, _current.ToString()),
-            '(' => new(TokenType.OpenParen, _current.ToString()),
-            ')' => new(TokenType.CloseParen, _current.ToString()),
-            '{' => new(TokenType.OpenBrace, _current.ToString()),
-            '}' => new(TokenType.CloseBrace, _current.ToString()),
-            ',' => new(TokenType.Comma, _current.ToString()),
-            '+' => new(TokenType.Plus, _current.ToString()),
-            '\0' => new(TokenType.EndOfFile, _current.ToString()),
-            
-            { } when IsLetterOrUnderscore(_current) => new(TokenType.Identifier, ReadIdentifier()),
-            
-            _ => new(TokenType.Illegal, _current.ToString())
-        };
-        ReadChar();
+            return ParseKeyword();
+        }
+
+        if (IsDigit(_current))
+        {
+            return ParseNumber();
+        }
+
+        Token token = ParseSymbol();
         
         return token;
     }
+    private void SkipWhitespace()
+    {
+        while (WhitespaceChars.Contains(_current))
+        {
+            ReadChar();
+        }
+    }
 
+    private Token ParseKeyword()
+    {
+        string literal = ReadIdentifier();
+        TokenType type = LookupIdentifier(literal);
+        return new Token(type, literal);
+    }
+
+    private Token ParseSymbol()
+    {
+        string literal = _current.ToString();
+        TokenType type = _current switch
+        {
+            '=' => TokenType.Assign,
+            ';' => TokenType.Semicolon,
+            '(' => TokenType.OpenParen,
+            ')' => TokenType.CloseParen,
+            '{' => TokenType.OpenBrace,
+            '}' => TokenType.CloseBrace,
+            ',' => TokenType.Comma,
+            '+' => TokenType.Plus,
+            '\0' => TokenType.EndOfFile,
+            _ => TokenType.Illegal
+        };
+        ReadChar();
+        return new Token(type, literal);
+    }
+
+    private Token ParseNumber()
+    {
+        string literal = ReadNumber();
+        TokenType type = TokenType.Int;
+        return new Token(type, literal);
+    }
+
+    private string ReadNumber()
+    {
+        int startIndex = _position;
+        while (IsDigit(_current))
+        {
+            ReadChar();
+        }
+
+        return Input[startIndex.._position];
+    }
+    
     private string ReadIdentifier()
     {
         int startIndex = _position;
@@ -62,5 +118,8 @@ public class Lexer
         _position = _readPosition++;
     }
 
+    private static TokenType LookupIdentifier(string identifier) => Keywords.TryGetValue(identifier, out TokenType type) ? type : TokenType.Identifier;
+    
+    private static bool IsDigit(char c) => char.IsDigit(c);
     private static bool IsLetterOrUnderscore(char c) => char.IsLetter(c) || c == '_';
 }
