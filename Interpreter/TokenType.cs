@@ -9,12 +9,16 @@ public enum TokenType
     
     // Operators
     Assign, Plus,
+    Minus, Slash,
+    Splat, Bang,
+    GreaterThan,
+    LessThan,
     
     // Delimiters
-    Comma, Semicolon,
     OpenParen, CloseParen,
     OpenBrace, CloseBrace,
+    Comma, Semicolon,
     
     // Keywords
-    Function, Let
+    Function, Let,
 }

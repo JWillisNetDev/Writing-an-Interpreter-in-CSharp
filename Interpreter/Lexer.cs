@@ -68,6 +68,12 @@ public class Lexer
             '}' => TokenType.CloseBrace,
             ',' => TokenType.Comma,
             '+' => TokenType.Plus,
+            '-' => TokenType.Minus,
+            '/' => TokenType.Slash,
+            '*' => TokenType.Splat,
+            '!' => TokenType.Bang,
+            '>' => TokenType.GreaterThan,
+            '<' => TokenType.LessThan,
             '\0' => TokenType.EndOfFile,
             _ => TokenType.Illegal
         };
