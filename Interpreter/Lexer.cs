@@ -14,6 +14,26 @@ public class Lexer
         { "false", TokenType.False },
         { "return", TokenType.Return }
     };
+
+    public static IReadOnlyDictionary<char, TokenType> Symbols { get; } = new Dictionary<char, TokenType>
+    {
+        { '\0', TokenType.EndOfFile },
+        { '=', TokenType.Assign },
+        { ';', TokenType.Semicolon },
+        { '(', TokenType.OpenParen },
+        { ')', TokenType.CloseParen },
+        { '{', TokenType.OpenBrace },
+        { '}', TokenType.CloseBrace },
+        { ',', TokenType.Comma },
+        { '+', TokenType.Plus },
+        { '-', TokenType.Minus },
+        { '/', TokenType.Slash },
+        { '*', TokenType.Splat },
+        { '!', TokenType.Bang },
+        { '>', TokenType.GreaterThan },
+        { '<', TokenType.LessThan },
+    };
+
     public static ImmutableArray<char> WhitespaceChars { get; } = new[] { ' ', '\t', '\r', '\n' }.ToImmutableArray();
 
     public string Input { get; }
@@ -21,7 +41,7 @@ public class Lexer
     private int _position; // The current position being read
     private int _readPosition; // The next character to be read
     private char _current; // Current character being read
-
+    
     public Lexer(string input)
     {
         Input = input;
@@ -60,25 +80,7 @@ public class Lexer
     private Token ParseSymbol()
     {
         string literal = _current.ToString();
-        TokenType type = _current switch
-        {
-            '=' => TokenType.Assign,
-            ';' => TokenType.Semicolon,
-            '(' => TokenType.OpenParen,
-            ')' => TokenType.CloseParen,
-            '{' => TokenType.OpenBrace,
-            '}' => TokenType.CloseBrace,
-            ',' => TokenType.Comma,
-            '+' => TokenType.Plus,
-            '-' => TokenType.Minus,
-            '/' => TokenType.Slash,
-            '*' => TokenType.Splat,
-            '!' => TokenType.Bang,
-            '>' => TokenType.GreaterThan,
-            '<' => TokenType.LessThan,
-            '\0' => TokenType.EndOfFile,
-            _ => TokenType.Illegal
-        };
+        TokenType type = Symbols.TryGetValue(_current, out TokenType t) ? t : TokenType.Illegal;
         ReadChar();
         return new Token(type, literal);
     }
