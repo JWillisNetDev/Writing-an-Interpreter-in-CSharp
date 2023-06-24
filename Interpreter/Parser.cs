@@ -6,9 +6,11 @@ public class Parser
 {
     private readonly Lexer _lexer;
 
-    // Null warning suppression: Calling NextToken() twice in the constructor will set both values.
-    public Token Current { get; private set; } = null!;
+    private readonly List<string> _errors = new();
+    
+    public Token Current { get; private set; } = null!; // Null warning suppression: Calling NextToken() twice in the constructor will set both values.
     public Token Peek { get; private set; } = null!;
+    public IReadOnlyCollection<string> Errors => _errors;
 
     public Parser(Lexer lexer)
     {
@@ -17,17 +19,11 @@ public class Parser
         NextToken();
     }
 
-    public void NextToken()
-    {
-        Current = Peek;
-        Peek = _lexer.MoveNext();
-    }
-
     public Program ParseProgram()
     {
         Program program = new();
 
-        while (Current.Type != TokenType.EndOfFile)
+        while (!CurrentTokenIs(TokenType.EndOfFile))
         {
             IStatement? statement = ParseStatement();
             if (statement is not null)
@@ -40,15 +36,22 @@ public class Parser
         return program;
     }
 
-    private IStatement? ParseStatement()
+    private bool CurrentTokenIs(TokenType type) => Current.Type == type;
+    
+    private bool ExpectPeek(TokenType type)
     {
-        switch (Current.Type)
+        if (PeekTokenIs(type))
         {
-            case TokenType.Let:
-                return ParseLetStatement();
-            default:
-                return null;
+            NextToken();
+            return true;
         }
+        return false;
+    }
+
+    private void NextToken()
+    {
+        Current = Peek;
+        Peek = _lexer.MoveNext();
     }
 
     private LetStatement? ParseLetStatement()
@@ -64,15 +67,18 @@ public class Parser
         return new(Token: token, Name: name, Value: null); // TODO null
     }
 
-    private bool CurrentTokenIs(TokenType type) => Current.Type == type;
-    private bool PeekTokenIs(TokenType type) => Peek.Type == type;
-    private bool ExpectPeek(TokenType type)
+    private IStatement? ParseStatement()
     {
-        if (PeekTokenIs(type))
+        switch (Current.Type)
         {
-            NextToken();
-            return true;
+            case TokenType.Let:
+                return ParseLetStatement();
+            default:
+                return null;
         }
-        return false;
     }
+    
+    private void PeekError(TokenType type) => _errors.Add($"expected next token to be `{type}`, but got `{Peek.Type}` instead.");
+    
+    private bool PeekTokenIs(TokenType type) => Peek.Type == type;
 }
