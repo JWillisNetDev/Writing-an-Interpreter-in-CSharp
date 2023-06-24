@@ -1,3 +1,4 @@
+using System.Collections.Immutable;
 using Interpreter.Ast;
 using Xunit.Abstractions;
 
@@ -31,14 +32,15 @@ public class ParserTests
         // Should not be null
         Assert.NotNull(actual);
         
-        // Should have 3 statements
-        Assert.Equal(3, actual.Statements.Count);
+        // Should have 3 let statements
+        Assert.Equal(3, actual.Statements.OfType<LetStatement>().Count());
+        ImmutableArray<LetStatement> letStatements = actual.Statements.OfType<LetStatement>().ToImmutableArray();
 
         // Should have identifiers 'x' 'y' and 'foobar'
         foreach ((int key, string expectedName)
                  in new [] { (0, "x"), (1, "y"), (2, "foobar") })
         {
-            var actualStatement = actual.Statements[key];
+            var actualStatement = letStatements[key];
             
             // IStatement literal should always be 'let'
             Assert.Equal("let", actualStatement.TokenLiteral);
@@ -99,6 +101,33 @@ public class ParserTests
             
             Assert.NotNull(actualReturn);
         }
+    }
+
+    [Fact]
+    public void ParseProgram_Identifier_ReturnsProgram()
+    {
+        const string input = "foobar;";
+        Lexer lexer = new(input);
+        Parser parser = new(lexer);
+
+        Program actual = parser.ParseProgram();
+        
+        AssertCheckParserErrors(parser);
+
+        Assert.Single(actual.Statements);
+        var statement = actual.Statements.Single();
+        Assert.NotNull(statement);
+        
+        Assert.IsType<ExpressionStatement>(statement);
+        var actualStatement = statement as ExpressionStatement;
+        Assert.NotNull(actualStatement);
+
+        Assert.IsType<Identifier>(actualStatement.Expression);
+        Identifier actualIdentifier = actualStatement.Expression as Identifier;
+        Assert.NotNull(actualIdentifier);
+        
+        Assert.Equal("foobar", actualIdentifier.Value);
+        Assert.Equal("foobar", actualIdentifier.TokenLiteral);
     }
 
     private void AssertCheckParserErrors(Parser parser)
