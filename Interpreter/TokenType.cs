@@ -24,4 +24,7 @@ public enum TokenType
     True, False,
     If, Else,
     Return,
+    
+    // Comparators
+    Equals, NotEquals,
 }

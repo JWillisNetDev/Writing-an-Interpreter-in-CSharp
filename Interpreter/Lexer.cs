@@ -31,9 +31,15 @@ public class Lexer
         { '*', TokenType.Splat },
         { '!', TokenType.Bang },
         { '>', TokenType.GreaterThan },
-        { '<', TokenType.LessThan },
+        { '<', TokenType.LessThan }
     };
 
+    public static IReadOnlyDictionary<string, TokenType> Operators = new Dictionary<string, TokenType>
+    {
+        { "==", TokenType.Equals },
+        { "!=", TokenType.NotEquals }
+    };
+    
     public static ImmutableArray<char> WhitespaceChars { get; } = new[] { ' ', '\t', '\r', '\n' }.ToImmutableArray();
 
     public string Input { get; }
@@ -53,14 +59,14 @@ public class Lexer
         SkipWhitespace();
         if (IsLetterOrUnderscore(_current))
         {
-            return ParseKeyword();
+            return ScanKeyword();
         }
         if (IsDigit(_current))
         {
-            return ParseNumber();
+            return ScanNumber();
         }
         
-        return ParseSymbol();
+        return ScanOperator();
     }
     private void SkipWhitespace()
     {
@@ -70,22 +76,86 @@ public class Lexer
         }
     }
 
-    private Token ParseKeyword()
+    private Token ScanKeyword()
     {
         string literal = ReadIdentifier();
         TokenType type = LookupIdentifier(literal);
         return new Token(type, literal);
     }
 
-    private Token ParseSymbol()
+    private Token ScanOperator()
     {
         string literal = _current.ToString();
-        TokenType type = Symbols.TryGetValue(_current, out TokenType t) ? t : TokenType.Illegal;
+        Token token;
+        switch (_current) 
+        {
+            case '\0':
+                token = new Token(TokenType.EndOfFile, literal);
+                break;
+            case '=':
+                if (PeekChar() == '=')
+                {
+                    ReadChar();
+                    literal += _current;
+                    token = new Token(TokenType.Equals, literal);
+                }
+                else { token = new Token(TokenType.Assign, literal); }
+                break;
+            case ';':
+                token = new Token(TokenType.Semicolon, literal);
+                break;
+            case '(':
+                token = new Token(TokenType.OpenParen ,literal);
+                break;
+            case ')':
+                token = new Token(TokenType.CloseParen ,literal);
+                break;
+            case '{':
+                token = new Token(TokenType.OpenBrace ,literal);
+                break;
+            case '}':
+                token = new Token(TokenType.CloseBrace ,literal);
+                break;
+            case ',':
+                token = new Token(TokenType.Comma ,literal);
+                break;
+            case '+':
+                token = new Token(TokenType.Plus ,literal);
+                break;
+            case '-':
+                token = new Token(TokenType.Minus ,literal);
+                break;
+            case '/':
+                token = new Token(TokenType.Slash ,literal);
+                break;
+            case '*':
+                token = new Token(TokenType.Splat ,literal);
+                break;
+            case '!':
+                if (PeekChar() == '=')
+                {
+                    ReadChar();
+                    literal += _current;
+                    token = new Token(TokenType.NotEquals, literal);
+                }
+                else { token = new Token(TokenType.Bang, literal); }
+                break;
+            case '>':
+                token = new Token(TokenType.GreaterThan ,literal);
+                break;
+            case '<':
+                token = new Token(TokenType.LessThan ,literal);
+                break;
+            default:
+                token = new Token(TokenType.Illegal, _current);
+                break;
+        }
         ReadChar();
-        return new Token(type, literal);
+
+        return token;
     }
 
-    private Token ParseNumber()
+    private Token ScanNumber()
     {
         string literal = ReadNumber();
         TokenType type = TokenType.Int;
@@ -126,6 +196,16 @@ public class Lexer
         }
 
         _position = _readPosition++;
+    }
+
+    private char PeekChar()
+    {
+        if (_readPosition >= Input.Length)
+        {
+            return '\0';
+        }
+
+        return Input[_readPosition];
     }
 
     private static TokenType LookupIdentifier(string identifier) => Keywords.TryGetValue(identifier, out TokenType type) ? type : TokenType.Identifier;
