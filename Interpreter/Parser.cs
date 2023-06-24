@@ -26,6 +26,7 @@ public class Parser
 
     public Program ParseProgram()
     {
+        Program program = new();
         throw new NotImplementedException();
     }
 }
