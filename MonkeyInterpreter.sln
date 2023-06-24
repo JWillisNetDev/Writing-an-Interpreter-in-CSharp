@@ -4,6 +4,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Interpreter", "Interpreter\
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Interpreter.Tests", "Interpreter.Tests\Interpreter.Tests.csproj", "{0B1429DC-EB36-40B3-A646-0EE8793E8192}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Interpreter.Cli", "Interpreter.Cli\Interpreter.Cli.csproj", "{659F946D-18AF-4594-A6EF-DC92BB802151}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -18,5 +20,9 @@ Global
 		{0B1429DC-EB36-40B3-A646-0EE8793E8192}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{0B1429DC-EB36-40B3-A646-0EE8793E8192}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{0B1429DC-EB36-40B3-A646-0EE8793E8192}.Release|Any CPU.Build.0 = Release|Any CPU
+		{659F946D-18AF-4594-A6EF-DC92BB802151}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{659F946D-18AF-4594-A6EF-DC92BB802151}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{659F946D-18AF-4594-A6EF-DC92BB802151}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{659F946D-18AF-4594-A6EF-DC92BB802151}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal
