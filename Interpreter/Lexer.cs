@@ -15,31 +15,6 @@ public class Lexer
         { "return", TokenType.Return }
     };
 
-    public static IReadOnlyDictionary<char, TokenType> Symbols { get; } = new Dictionary<char, TokenType>
-    {
-        { '\0', TokenType.EndOfFile },
-        { '=', TokenType.Assign },
-        { ';', TokenType.Semicolon },
-        { '(', TokenType.OpenParen },
-        { ')', TokenType.CloseParen },
-        { '{', TokenType.OpenBrace },
-        { '}', TokenType.CloseBrace },
-        { ',', TokenType.Comma },
-        { '+', TokenType.Plus },
-        { '-', TokenType.Minus },
-        { '/', TokenType.Slash },
-        { '*', TokenType.Splat },
-        { '!', TokenType.Bang },
-        { '>', TokenType.GreaterThan },
-        { '<', TokenType.LessThan }
-    };
-
-    public static IReadOnlyDictionary<string, TokenType> Operators = new Dictionary<string, TokenType>
-    {
-        { "==", TokenType.Equals },
-        { "!=", TokenType.NotEquals }
-    };
-    
     public static ImmutableArray<char> WhitespaceChars { get; } = new[] { ' ', '\t', '\r', '\n' }.ToImmutableArray();
 
     public string Input { get; }
