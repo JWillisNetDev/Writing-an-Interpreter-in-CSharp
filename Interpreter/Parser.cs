@@ -9,7 +9,7 @@ public class Parser
     private readonly List<string> _errors = new();
     
     public Token Current { get; private set; } = null!; // Null warning suppression: Calling NextToken() twice in the constructor will set both values.
-    public Token Peek { get; private set; } = null!;
+    public Token Next { get; private set; } = null!;
     public IReadOnlyCollection<string> Errors => _errors;
 
     public Parser(Lexer lexer)
@@ -37,34 +37,11 @@ public class Parser
     }
 
     private bool CurrentTokenIs(TokenType type) => Current.Type == type;
-    
-    private bool ExpectPeek(TokenType type)
-    {
-        if (PeekTokenIs(type))
-        {
-            NextToken();
-            return true;
-        }
-        return false;
-    }
 
     private void NextToken()
     {
-        Current = Peek;
-        Peek = _lexer.MoveNext();
-    }
-
-    private LetStatement? ParseLetStatement()
-    {
-        Token token = Current;
-
-        if (!ExpectPeek(TokenType.Identifier)) { return null; }
-        Identifier name = new(Current, Current.Literal);
-
-        if (!ExpectPeek(TokenType.Assign)) { return null; }
-        while (CurrentTokenIs(TokenType.Semicolon)) { NextToken(); }
-
-        return new(Token: token, Name: name, Value: null); // TODO null
+        Current = Next;
+        Next = _lexer.MoveNext();
     }
 
     private IStatement? ParseStatement()
@@ -73,12 +50,49 @@ public class Parser
         {
             case TokenType.Let:
                 return ParseLetStatement();
+            case TokenType.Return:
+                return ParseReturnStatement();
             default:
                 return null;
         }
     }
+
+    private LetStatement? ParseLetStatement()
+    {
+        Token token = Current;
+
+        if (!ExpectPeek(TokenType.Identifier)) { return null; }
+        Identifier name = new(Current, Current.Literal);
+        
+        // TODO Skipping expressions for now.
+        if (!ExpectPeek(TokenType.Assign)) { return null; }
+        while (CurrentTokenIs(TokenType.Semicolon)) { NextToken(); }
+
+        return new LetStatement(Token: token, Name: name, Value: null); // TODO null
+    }
+
+    private ReturnStatement? ParseReturnStatement()
+    {
+        Token token = Current;
+        
+        // TODO Skipping expressions for now
+        while (!CurrentTokenIs(TokenType.Semicolon)) { NextToken(); }
+
+        return new ReturnStatement(Token: token, ReturnValue: null); // TODO null
+    }
     
-    private void PeekError(TokenType type) => _errors.Add($"expected next token to be `{type}`, but got `{Peek.Type}` instead.");
+    private bool ExpectPeek(TokenType type)
+    {
+        if (PeekTokenIs(type))
+        {
+            NextToken();
+            return true;
+        }
+        PeekError(type);
+        return false;
+    }
     
-    private bool PeekTokenIs(TokenType type) => Peek.Type == type;
+    private bool PeekTokenIs(TokenType type) => Next.Type == type;
+    
+    private void PeekError(TokenType type) => _errors.Add($"expected next token to be `{type}`, but got `{Next.Type}` instead.");
 }
