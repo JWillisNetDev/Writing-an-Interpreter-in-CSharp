@@ -1,4 +1,3 @@
-using System.Diagnostics.CodeAnalysis;
 using Interpreter.Ast;
 
 namespace Interpreter;
@@ -27,6 +26,53 @@ public class Parser
     public Program ParseProgram()
     {
         Program program = new();
-        throw new NotImplementedException();
+
+        while (Current.Type != TokenType.EndOfFile)
+        {
+            IStatement? statement = ParseStatement();
+            if (statement is not null)
+            {
+                program.Statements.Add(statement);
+            }
+            NextToken();
+        }
+
+        return program;
+    }
+
+    private IStatement? ParseStatement()
+    {
+        switch (Current.Type)
+        {
+            case TokenType.Let:
+                return ParseLetStatement();
+            default:
+                return null;
+        }
+    }
+
+    private LetStatement? ParseLetStatement()
+    {
+        Token token = Current;
+
+        if (!ExpectPeek(TokenType.Identifier)) { return null; }
+        Identifier name = new(Current, Current.Literal);
+
+        if (!ExpectPeek(TokenType.Assign)) { return null; }
+        while (CurrentTokenIs(TokenType.Semicolon)) { NextToken(); }
+
+        return new(Token: token, Name: name, Value: null); // TODO null
+    }
+
+    private bool CurrentTokenIs(TokenType type) => Current.Type == type;
+    private bool PeekTokenIs(TokenType type) => Peek.Type == type;
+    private bool ExpectPeek(TokenType type)
+    {
+        if (PeekTokenIs(type))
+        {
+            NextToken();
+            return true;
+        }
+        return false;
     }
 }

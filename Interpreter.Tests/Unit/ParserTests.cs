@@ -12,6 +12,7 @@ public class ParserTests
         _output = output;
     }
 
+    [Fact]
     public void ParseProgram_LetStatements_ReturnsProgram()
     {
         // Assign
