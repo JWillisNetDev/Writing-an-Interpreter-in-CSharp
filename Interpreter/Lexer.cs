@@ -20,7 +20,7 @@ public class Lexer
     public string Input { get; }
 
     private int _position; // The current position being read
-    private int _readPosition; // The next character to be read
+    private int _readPosition; // The next position to be read
     private char _current; // Current character being read
     
     public Lexer(string input)
