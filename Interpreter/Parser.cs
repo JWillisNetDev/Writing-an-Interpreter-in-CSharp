@@ -22,7 +22,9 @@ public class Parser
         NextToken();
         
         RegisterPrefix(TokenType.Identifier, () => new Identifier(Current, Current.Literal));
-        RegisterPrefix(TokenType.Int, ParseIntegerLiteral!);
+        RegisterPrefix(TokenType.Int, ParseIntegerLiteralExpression!);
+        RegisterPrefix(TokenType.Bang, ParsePrefixExpression!);
+        RegisterPrefix(TokenType.Minus, ParsePrefixExpression!);
     }
 
     public Program ParseProgram()
@@ -112,7 +114,7 @@ public class Parser
     }
 
     // [0-9]
-    public IExpression? ParseIntegerLiteral()
+    public IExpression? ParseIntegerLiteralExpression()
     {
         if (long.TryParse(Current.Literal, out long value))
         {
@@ -120,6 +122,22 @@ public class Parser
         }
         _errors.Add($"Could not parse {Current} as an integer value (64-bit)");
         return null;
+    }
+    
+    // <prefix><expression>
+    public IExpression? ParsePrefixExpression()
+    {
+        var token = Current;
+        
+        NextToken();
+        IExpression? right = ParseExpression(Precedence.Prefix);
+        return new PrefixExpression(token, token.Literal, right);
+    }
+    
+    // <expression> <infix-operator> <expression>
+    public IExpression? ParseInfixExpression()
+    {
+        throw new NotImplementedException();
     }
 
     private bool ExpectPeek(TokenType type)

@@ -46,11 +46,9 @@ public class ParserTests
             Assert.Equal("let", actualStatement.TokenLiteral);
 
             // IStatement should be of concrete type LetStatement
-            Assert.IsType<LetStatement>(actualStatement);
-            var actualLet = (LetStatement)actualStatement;
+            var actualLet = Assert.IsType<LetStatement>(actualStatement);
             
             // LetStatement should be an actual value and have the correct identifier name
-            Assert.NotNull(actualLet);
             Assert.Equal(expectedName, actualLet.Name.Value);
             Assert.Equal(expectedName, actualLet.Name.TokenLiteral);
             
@@ -95,10 +93,7 @@ public class ParserTests
         foreach (IStatement statement in actual.Statements)
         {
             Assert.Equal("return", statement.TokenLiteral);
-            
-            Assert.IsType<ReturnStatement>(statement);
-            var actualReturn = (ReturnStatement)statement;
-            
+            var actualReturn = Assert.IsType<ReturnStatement>(statement);
             Assert.NotNull(actualReturn);
         }
     }
@@ -116,12 +111,8 @@ public class ParserTests
 
         Assert.Single(actual.Statements);
         var statement = actual.Statements.Single();
-        
-        Assert.IsType<ExpressionStatement>(statement);
-        var actualStatement = (ExpressionStatement)statement;
-
-        Assert.IsType<Identifier>(actualStatement.Expression);
-        Identifier actualIdentifier = (Identifier)actualStatement.Expression;
+        var actualStatement = Assert.IsType<ExpressionStatement>(statement);
+        Identifier actualIdentifier = Assert.IsType<Identifier>(actualStatement.Expression);
         Assert.Multiple(() =>
         {
             Assert.Equal("foobar", actualIdentifier.Value);
@@ -143,20 +134,43 @@ public class ParserTests
 
         Assert.Single(actual.Statements);
         var statement = actual.Statements.Single();
-        
-        Assert.IsType<ExpressionStatement>(statement);
-        var actualStatement = (ExpressionStatement)statement;
-
-        Assert.IsType<IntegerLiteral>(actualStatement.Expression);
-        var integerLiteral = (IntegerLiteral)actualStatement.Expression;
-        Assert.NotNull(integerLiteral);
+        var actualStatement = Assert.IsType<ExpressionStatement>(statement);
+        var integerLiteral = Assert.IsType<IntegerLiteral>(actualStatement.Expression);
         Assert.Equal(expected, integerLiteral.Value);
         Assert.Equal($"{expected}", integerLiteral.TokenLiteral);
+    }
+
+    [Theory]
+    [InlineData("!5;", "!", 5L)]
+    [InlineData("-15;", "-", 15L)]
+    public void ParseProgram_PrefixExpressions_ReturnsProgram(string input, string expectedOperator, long expectedValue)
+    {
+        Lexer lexer = new(input);
+        Parser parser = new(lexer);
+
+        Program actual = parser.ParseProgram();
+
+        AssertCheckParserErrors(parser);
+
+        Assert.Single(actual.Statements);
+        var statement = actual.Statements.Single();
+        
+        var actualStatement = Assert.IsType<ExpressionStatement>(statement);
+        var prefixExpression = Assert.IsType<PrefixExpression>(actualStatement.Expression);
+        Assert.Equal(expectedOperator, prefixExpression.Operator);
+        AssertCheckIntegerLiteral(prefixExpression.Right, expectedValue);
     }
 
     private void AssertCheckParserErrors(Parser parser)
     {
         foreach (string error in parser.Errors) { _output.WriteLine(error); }
         Assert.Equal(0, parser.Errors.Count);
+    }
+
+    private void AssertCheckIntegerLiteral(IExpression expression, long expectedValue)
+    {
+        var integerLiteral = Assert.IsType<IntegerLiteral>(expression);
+        Assert.Equal(expectedValue, integerLiteral.Value);
+        Assert.Equal($"{expectedValue}", integerLiteral.TokenLiteral);
     }
 }
