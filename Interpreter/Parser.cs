@@ -8,11 +8,10 @@ public class Parser
     private readonly List<string> _errors = new();
     private readonly Dictionary<TokenType, Func<IExpression, IExpression>> _infixParsers = new();
     private readonly Dictionary<TokenType, Func<IExpression>> _prefixParsers = new();
-    
-    public Token Current { get; private set; } = null!; // Null warning suppression: Calling NextToken() twice in the constructor will set both values.
-    public Token Next { get; private set; } = null!;
-    public IReadOnlyCollection<string> Errors => _errors;
 
+    public Token Current { get; private set; } = null!; // Null warning suppression: Calling NextToken() in the constructor will set this value
+    public Token Next { get; private set; } = null!; // Null warning suppression: Calling NextToken() twice in the constructor will set this value
+    public IReadOnlyCollection<string> Errors => _errors;
     public IReadOnlyDictionary<TokenType, Func<IExpression, IExpression>> InfixParsers => _infixParsers.AsReadOnly();
     public IReadOnlyDictionary<TokenType, Func<IExpression>> PrefixParsers => _prefixParsers.AsReadOnly();
 
@@ -23,6 +22,7 @@ public class Parser
         NextToken();
         
         RegisterPrefix(TokenType.Identifier, () => new Identifier(Current, Current.Literal));
+        RegisterPrefix(TokenType.Int, ParseIntegerLiteral!);
     }
 
     public Program ParseProgram()
@@ -64,7 +64,8 @@ public class Parser
                 return ParseExpressionStatement();
         }
     }
-
+    
+    // let <identifier> = <expression>
     private LetStatement? ParseLetStatement()
     {
         Token token = Current;
@@ -79,6 +80,7 @@ public class Parser
         return new LetStatement(Token: token, Name: name, Value: null); // TODO null
     }
 
+    // return <expression|identifier>;
     private ReturnStatement? ParseReturnStatement()
     {
         Token token = Current;
@@ -101,14 +103,25 @@ public class Parser
 
     public IExpression? ParseExpression(Precedence precedence)
     {
-        if (_prefixParsers.TryGetValue(Current.Type, out var prefixParser))
+        if (_prefixParsers.TryGetValue(Current.Type, out Func<IExpression>? prefixParser))
         {
             IExpression left = prefixParser();
             return left;
         }
         return null;
     }
-    
+
+    // [0-9]
+    public IExpression? ParseIntegerLiteral()
+    {
+        if (long.TryParse(Current.Literal, out long value))
+        {
+            return new IntegerLiteral(Current, value);
+        }
+        _errors.Add($"Could not parse {Current} as an integer value (64-bit)");
+        return null;
+    }
+
     private bool ExpectPeek(TokenType type)
     {
         if (NextTokenIs(type))
