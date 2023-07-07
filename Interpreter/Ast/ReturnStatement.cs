@@ -9,4 +9,6 @@ public record ReturnStatement(Token Token, IExpression? ReturnValue) : IStatemen
     public void StatementNode()
     {
     }
+    
+    public override string ToString() => $"{TokenLiteral} {ReturnValue?.ToString() ?? string.Empty};";
 }

@@ -192,12 +192,15 @@ public class ParserTests
     [InlineData("a * b * c", "((a * b) * c)")]
     [InlineData("a * b / c", "((a * b) / c)")]
     [InlineData("a + b / c", "(a + (b / c))")]
-    [InlineData("a + b * c + d / e - f", "(((a + (b * c)) +  (d / e)) - f)")]
+    [InlineData("a + b * c + d / e - f", "(((a + (b * c)) + (d / e)) - f)")]
     [InlineData("3 + 4; -5 * 5", "(3 + 4)((-5) * 5)")]
     [InlineData("5 > 4 == 3 < 4", "((5 > 4) == (3 < 4))")]
     [InlineData("5 < 4 != 3 > 4", "((5 < 4) != (3 > 4))")]
     [InlineData("3 + 4 * 5 == 3 * 1 + 4 * 5", "((3 + (4 * 5)) == ((3 * 1) + (4 * 5)))")]
     public void ParseProgram_OperationalOrder_OperationsParseInCorrectOrder(string input, string expected)
+        // I hate this test and I /HATE/ overriding tostring on records
+        // and I have an absolute seething hatred for using strings to provide testing for what can be better expressed using some more practical logical forms
+        // TODO nuke
     {
         Lexer lexer = new(input);
         Parser parser = new(lexer);
@@ -206,7 +209,7 @@ public class ParserTests
 
         AssertCheckParserErrors(parser);
         
-        
+        Assert.Equal(expected, actual.ToString());
     }
 
 

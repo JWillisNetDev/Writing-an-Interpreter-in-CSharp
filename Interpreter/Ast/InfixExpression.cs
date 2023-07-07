@@ -12,8 +12,5 @@ public record InfixExpression(Token Token, IExpression Left, IExpression Right, 
     {
     }
 
-    public override string ToString()
-    {
-        StringBuilder builder = new();
-    }
+    public override string ToString() => $"({Left} {Operator} {Right})";
 }

@@ -9,4 +9,6 @@ public record class Identifier(Token Token, string Value) : IExpression
     public void ExpressionNode()
     {
     }
+
+    public override string ToString() => Value;
 }

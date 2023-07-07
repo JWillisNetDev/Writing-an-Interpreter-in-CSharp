@@ -9,4 +9,6 @@ public record IntegerLiteral(Token Token, long Value) : IExpression
     public void ExpressionNode()
     {
     }
+
+    public override string ToString() => TokenLiteral;
 }

@@ -10,4 +10,6 @@ public record PrefixExpression(Token Token, string Operator, IExpression Right) 
     public void ExpressionNode()
     {
     }
+
+    public override string ToString() => $"({Operator}{Right})";
 }

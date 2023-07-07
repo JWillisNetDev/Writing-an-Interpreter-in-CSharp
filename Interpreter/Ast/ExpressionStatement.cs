@@ -9,4 +9,6 @@ public record class ExpressionStatement(Token Token, IExpression Expression) : I
     public void StatementNode()
     {
     }
+
+    public override string ToString() => $"{Expression?.ToString() ?? string.Empty}";
 } 

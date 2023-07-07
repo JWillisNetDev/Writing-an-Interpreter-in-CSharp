@@ -11,4 +11,6 @@ public record class LetStatement(Token Token, Identifier Name, IExpression? Valu
     public void StatementNode()
     {
     }
+    
+    public override string ToString() => $"{TokenLiteral} {Name} = {Value?.ToString() ?? string.Empty};";
 }
