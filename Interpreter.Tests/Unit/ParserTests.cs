@@ -151,15 +151,18 @@ public class ParserTests
     }
 
     [Theory]
-    [InlineData("5 + 5;", 5L, 5L, "+")]
-    [InlineData("5 - 5;", 5L, 5L, "-")]
-    [InlineData("5 * 5;", 5L, 5L, "*")]
-    [InlineData("5 / 5;", 5L, 5L, "/")]
-    [InlineData("5 > 5;", 5L, 5L, ">")]
-    [InlineData("5 < 5;", 5L, 5L, "<")]
-    [InlineData("5 == 5;", 5L, 5L, "==")]
-    [InlineData("5 != 5;", 5L, 5L, "!=")]
-    public void ParseProgram_InfixExpressions_ParsesIntLiteralsAndOperator(string input, long expectedLeft, long expectedRight, string expectedOperator)
+    [InlineData("5 + 5;", 5L, "+", 5L)]
+    [InlineData("5 - 5;", 5L, "-", 5L)]
+    [InlineData("5 * 5;", 5L, "*", 5L)]
+    [InlineData("5 / 5;", 5L, "/", 5L)]
+    [InlineData("5 > 5;", 5L, ">", 5L)]
+    [InlineData("5 < 5;", 5L, "<", 5L)]
+    [InlineData("5 == 5;", 5L, "==", 5L)]
+    [InlineData("5 != 5;", 5L, "!=", 5L)]
+    [InlineData("true == true;", true, "==", true)]
+    [InlineData("true != false;", true, "!=", false)]
+    [InlineData("false == false;", false, "==", false)]
+    public void ParseProgram_InfixExpressions_ParsesIntLiteralsAndOperator<TLeft, TRight>(string input, TLeft expectedLeft, string expectedOperator, TRight expectedRight)
     {
         Lexer lexer = new(input);
         Parser parser = new(lexer);
@@ -186,6 +189,10 @@ public class ParserTests
     [InlineData("5 > 4 == 3 < 4", "((5 > 4) == (3 < 4))")]
     [InlineData("5 < 4 != 3 > 4", "((5 < 4) != (3 > 4))")]
     [InlineData("3 + 4 * 5 == 3 * 1 + 4 * 5", "((3 + (4 * 5)) == ((3 * 1) + (4 * 5)))")]
+    [InlineData("true", "true")]
+    [InlineData("false", "false")]
+    [InlineData("3 > 5 == false", "((3 > 5) == false)")]
+    [InlineData("3 < 5 == false", "((3 < 5) == false)")]
     public void ParseProgram_OperationalOrder_OperationsParseInCorrectOrder(string input, string expected)
         // I hate this test and I /HATE/ overriding tostring on records
         // and I have an absolute seething hatred for using strings to provide testing for what can be better expressed using some more practical logical forms
@@ -264,7 +271,7 @@ public class ParserTests
     {
         var actualBoolLiteral = Assert.IsType<BooleanLiteral>(expression);
         Assert.Equal(expectedValue, actualBoolLiteral.Value);
-        Assert.Equal(expectedValue.ToString(), actualBoolLiteral.TokenLiteral);
+        Assert.Equal(expectedValue.ToString().ToLowerInvariant(), actualBoolLiteral.TokenLiteral);
     }
 
     private void AssertCheckPrefixExpression<T>(IExpression expression, string expectedOperator, T expectedValue)
