@@ -43,6 +43,8 @@ public class Parser
         RegisterPrefix(TokenType.Int, ParseIntegerLiteralExpression!);
         RegisterPrefix(TokenType.Bang, ParsePrefixExpression!);
         RegisterPrefix(TokenType.Minus, ParsePrefixExpression!);
+        RegisterPrefix(TokenType.True, ParseBooleanLiteral);
+        RegisterPrefix(TokenType.False, ParseBooleanLiteral);
         
         // Register infixers
         RegisterInfix(TokenType.Plus, ParseInfixExpression);
@@ -54,6 +56,8 @@ public class Parser
         RegisterInfix(TokenType.LessThan, ParseInfixExpression);
         RegisterInfix(TokenType.GreaterThan, ParseInfixExpression);
     }
+    
+    private IExpression ParseBooleanLiteral() => new BooleanLiteral(Current, CurrentTokenIs(TokenType.True));
 
     public Program ParseProgram()
     {

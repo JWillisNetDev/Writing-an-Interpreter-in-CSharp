@@ -113,7 +113,7 @@ public class ParserTests
 
         var statement = Assert.Single(actual.Statements);
         var actualStatement = Assert.IsType<ExpressionStatement>(statement);
-        AssertCheckIdentifier(actualStatement.Expression, input);
+        AssertCheckLiteralExpression(actualStatement.Expression, input[..^1]);
     }
 
     [Fact]
@@ -130,7 +130,7 @@ public class ParserTests
 
         var statement = Assert.Single(actual.Statements);
         var actualStatement = Assert.IsType<ExpressionStatement>(statement);
-        AssertCheckIntegerLiteral(actualStatement.Expression, expected);
+        AssertCheckLiteralExpression(actualStatement.Expression, expected);
     }
 
     [Theory]
@@ -201,25 +201,27 @@ public class ParserTests
         Assert.Equal(expected, actual.ToString());
     }
 
+    [Theory]
+    [InlineData("true;", true)]
+    [InlineData("false;", false)]
+    public void ParseProgram_BooleanLiterals_ParsesBooleanValues(string input, bool expectedValue)
+    {
+        Lexer lexer = new(input);
+        Parser parser = new(lexer);
+
+        Program actual = parser.ParseProgram();
+
+        AssertCheckParserErrors(parser);
+
+        var statement = Assert.Single(actual.Statements);
+        var actualExpression = Assert.IsType<ExpressionStatement>(statement);
+        AssertCheckLiteralExpression(actualExpression.Expression, expectedValue);
+    }
 
     private void AssertCheckParserErrors(Parser parser)
     {
         foreach (string error in parser.Errors) { _output.WriteLine(error); }
         Assert.Equal(0, parser.Errors.Count);
-    }
-
-    private void AssertCheckIntegerLiteral(IExpression expression, long expectedValue)
-    {
-        var integerLiteral = Assert.IsType<IntegerLiteral>(expression);
-        Assert.Equal(expectedValue, integerLiteral.Value);
-        Assert.Equal($"{expectedValue}", integerLiteral.TokenLiteral);
-    }
-
-    private void AssertCheckIdentifier(IExpression expression, string value)
-    {
-        var identifier = Assert.IsType<Identifier>(expression);
-        Assert.Equal(value, identifier.Value);
-        Assert.Equal(value, identifier.TokenLiteral);
     }
 
     private void AssertCheckLiteralExpression<T>(IExpression expression, T expected)
@@ -235,18 +237,38 @@ public class ParserTests
             case string s:
                 AssertCheckIdentifier(expression, s);
                 break;
+            case bool b:
+                AssertCheckBooleanLiteral(expression, b);
+                break;
             default:
                 Assert.Fail($"Encountered unanticipated literal expression `{expression}`");
                 break;
         }
     }
 
+    private void AssertCheckIntegerLiteral(IExpression expression, long expectedValue)
+    {
+        var actualIntLiteral = Assert.IsType<IntegerLiteral>(expression);
+        Assert.Equal(expectedValue, actualIntLiteral.Value);
+        Assert.Equal(expectedValue.ToString(), actualIntLiteral.TokenLiteral);
+    }
+
+    private void AssertCheckIdentifier(IExpression expression, string value)
+    {
+        var actualIdentifier = Assert.IsType<Identifier>(expression);
+        Assert.Equal(value, actualIdentifier.Value);
+        Assert.Equal(value, actualIdentifier.TokenLiteral);
+    }
+
+    private void AssertCheckBooleanLiteral(IExpression expression, bool expectedValue)
+    {
+        var actualBoolLiteral = Assert.IsType<BooleanLiteral>(expression);
+        Assert.Equal(expectedValue, actualBoolLiteral.Value);
+        Assert.Equal(expectedValue.ToString(), actualBoolLiteral.TokenLiteral);
+    }
+
     private void AssertCheckPrefixExpression<T>(IExpression expression, string expectedOperator, T expectedValue)
     {
-        
-        // var prefixExpression = Assert.IsType<PrefixExpression>(actualStatement.Expression);
-        // Assert.Equal(expectedOperator, prefixExpression.Operator);
-        // AssertCheckIntegerLiteral(prefixExpression.Right, expectedValue);
         var prefixExpression = Assert.IsType<PrefixExpression>(expression);
         Assert.Equal(expectedOperator, prefixExpression.Operator);
         AssertCheckLiteralExpression(prefixExpression.Right, expectedValue);
