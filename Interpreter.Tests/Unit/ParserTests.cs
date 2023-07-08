@@ -200,6 +200,9 @@ public class ParserTests
     [InlineData("2 / (5 + 5)", "(2 / (5 + 5))")]
     [InlineData("-(5 + 5)", "(-(5 + 5))")]
     [InlineData("!(true == true)", "(!(true == true))")]
+    [InlineData("a + add(b * c) + d", "((a + add((b * c))) + d)")]
+    [InlineData("add(a, b, 1, 2 * 3, 4 + 5, add(6, 7 * 8))", "add(a, b, 1, (2 * 3), (4 + 5), add(6, (7 * 8)))")]
+    [InlineData("add(a + b + c * d / f + g)", "add((((a + b) + ((c * d) / f)) + g))")]
     public void ParseProgram_OperationalOrder_OperationsParseInCorrectOrder(string input, string expected)
         // I hate this test and I /HATE/ overriding tostring on records
         // and I have an absolute seething hatred for using strings to provide testing for what can be better expressed using some more practical logical forms
@@ -325,6 +328,53 @@ public class ParserTests
         var functionLiteral = Assert.IsType<FunctionLiteral>(expression);
         Assert.Equal(expectedParams.Length, functionLiteral.Parameters.Length);
         Assert.Equivalent(expectedParams, functionLiteral.Parameters.Select(p => p.Value));
+    }
+
+    [Fact]
+    public void ParseProgram_CallExpressions_ParsesCallExpressionStatementsAndArguments()
+    {
+        const string input = "add(1, 2 * 3, 4 + 5);";
+        Lexer lexer = new(input);
+        Parser parser = new(lexer);
+
+        Program actual = parser.ParseProgram();
+
+        AssertCheckParserErrors(parser);
+
+        var statement = Assert.Single(actual.Statements);
+        var expression = Assert.IsType<ExpressionStatement>(statement).Expression;
+        
+        var callExpression = Assert.IsType<CallExpression>(expression);
+        AssertCheckIdentifier(callExpression.Function, "add");
+
+        Assert.Equal(3, callExpression.Arguments.Length);
+        AssertCheckLiteralExpression(callExpression.Arguments[0], 1);
+        AssertCheckInfixExpression(callExpression.Arguments[1], 2, "*", 3);
+        AssertCheckInfixExpression(callExpression.Arguments[2], 4, "+", 5);
+    }
+
+    [Theory]
+    [InlineData("rand()", "rand", new string[] { })]
+    [InlineData("add(x, y, z)", "add", new [] { "x", "y", "z"})]
+    [InlineData("sub(5, 7)", "sub", new [] { "5", "7"})]
+    [InlineData("mul(5, 7, d)", "mul", new [] { "5", "7", "d"})]
+    public void ParseProgram_CallExpressionsArguments_ParsesCallExpressionArgumentsLiterals(string input, string function, string[] arguments)
+    {
+        Lexer lexer = new(input);
+        Parser parser = new(lexer);
+
+        Program actual = parser.ParseProgram();
+
+        AssertCheckParserErrors(parser);
+
+        var statement = Assert.Single(actual.Statements);
+        var expression = Assert.IsType<ExpressionStatement>(statement).Expression;
+        
+        var callExpression = Assert.IsType<CallExpression>(expression);
+        AssertCheckIdentifier(callExpression.Function, function);
+
+        Assert.Equal(arguments.Length, callExpression.Arguments.Length);
+        Assert.Equivalent(arguments, callExpression.Arguments.Select(a => a.TokenLiteral));
     }
 
     private void AssertCheckParserErrors(Parser parser)

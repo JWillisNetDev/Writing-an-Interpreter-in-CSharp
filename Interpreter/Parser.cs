@@ -30,6 +30,7 @@ public class Parser
         { TokenType.Minus, Precedence.Sum },
         { TokenType.Splat, Precedence.Product },
         { TokenType.Slash, Precedence.Product },
+        { TokenType.OpenParen, Precedence.Call },
     };
 
     public Parser(Lexer lexer)
@@ -58,6 +59,7 @@ public class Parser
         RegisterInfix(TokenType.NotEquals, ParseInfixExpression);
         RegisterInfix(TokenType.LessThan, ParseInfixExpression);
         RegisterInfix(TokenType.GreaterThan, ParseInfixExpression);
+        RegisterInfix(TokenType.OpenParen, ParseCallExpression);
     }
 
     public Program ParseProgram()
@@ -77,6 +79,36 @@ public class Parser
         return program;
     }
     
+    private CallExpression ParseCallExpression(IExpression function)
+    {
+        var token = Current;
+        IEnumerable<IExpression> arguments = ParseCallArguments() ?? Enumerable.Empty<IExpression>();
+        return new CallExpression(token, function, arguments);
+
+        List<IExpression>? ParseCallArguments()
+        {
+            List<IExpression> expressions = new();
+            if (NextTokenIs(TokenType.CloseParen))
+            {
+                NextToken();
+                return expressions;
+            }
+            
+            NextToken();
+            expressions.Add(ParseExpression(Precedence.Lowest)!); // TODO nulls
+            while (NextTokenIs(TokenType.Comma))
+            {
+                NextToken();
+                NextToken();
+                expressions.Add(ParseExpression(Precedence.Lowest)!); // TODO nulls
+            }
+
+            return ExpectNext(TokenType.CloseParen) ?
+                expressions :
+                null;
+        }
+    }
+    
     private FunctionLiteral? ParseFunctionLiteral()
     {
         var token = Current;
@@ -89,7 +121,7 @@ public class Parser
 
         return new FunctionLiteral(token, parameters, body);
         
-        IEnumerable<Identifier>? ParseFunctionParameters()
+        List<Identifier>? ParseFunctionParameters()
         {
             List<Identifier> identifiers = new();
             
