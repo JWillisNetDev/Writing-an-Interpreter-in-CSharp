@@ -232,6 +232,55 @@ public class ParserTests
         AssertCheckLiteralExpression(actualExpression.Expression, expectedValue);
     }
 
+    [Fact]
+    public void ParseProgram_IfExpressionWithoutElse_ParsesIfExpressionWithoutAlternative()
+    {
+        const string input = "if (x < y) { x }";
+        Lexer lexer = new(input);
+        Parser parser = new(lexer);
+
+        var actual = parser.ParseProgram();
+
+        AssertCheckParserErrors(parser);
+
+        var statement = Assert.Single(actual.Statements);
+        var expressionStatement = Assert.IsType<ExpressionStatement>(statement);
+        var ifExpression = Assert.IsType<IfExpression>(expressionStatement.Expression);
+        AssertCheckInfixExpression(ifExpression.Condition, "x", "<", "y");
+
+        var consequence = Assert.Single(ifExpression.Consequence.Statements);
+        var consequenceExpressionStatement = Assert.IsType<ExpressionStatement>(consequence);
+        AssertCheckLiteralExpression(consequenceExpressionStatement.Expression, "x");
+
+        Assert.Null(ifExpression.Alternative);
+    }
+    
+    [Fact]
+    public void ParseProgram_IfExpressionWithElse_ParsesIfExpressionWithAlternative()
+    {
+        const string input = "if (x < y) { x } else { y }";
+        Lexer lexer = new(input);
+        Parser parser = new(lexer);
+
+        var actual = parser.ParseProgram();
+
+        AssertCheckParserErrors(parser);
+
+        var statement = Assert.Single(actual.Statements);
+        var expressionStatement = Assert.IsType<ExpressionStatement>(statement);
+        var ifExpression = Assert.IsType<IfExpression>(expressionStatement.Expression);
+        AssertCheckInfixExpression(ifExpression.Condition, "x", "<", "y");
+
+        var consequence = Assert.Single(ifExpression.Consequence.Statements);
+        var consequenceExpressionStatement = Assert.IsType<ExpressionStatement>(consequence);
+        AssertCheckLiteralExpression(consequenceExpressionStatement.Expression, "x");
+
+        Assert.NotNull(ifExpression.Alternative);
+        var alternative = Assert.Single(ifExpression.Alternative.Statements);
+        var alternativeExpressionStatement = Assert.IsType<ExpressionStatement>(alternative);
+        AssertCheckLiteralExpression(alternativeExpressionStatement.Expression, "y");
+    }
+    
     private void AssertCheckParserErrors(Parser parser)
     {
         foreach (string error in parser.Errors) { _output.WriteLine(error); }

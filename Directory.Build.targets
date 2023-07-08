@@ -1,5 +1,6 @@
 <Project>
     <ItemGroup>
         <Using Include="System.Text" />
+        <Using Include="System.Collections.Immutable" />
     </ItemGroup>
 </Project>

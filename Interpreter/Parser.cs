@@ -46,6 +46,7 @@ public class Parser
         RegisterPrefix(TokenType.True, ParseBooleanLiteral);
         RegisterPrefix(TokenType.False, ParseBooleanLiteral);
         RegisterPrefix(TokenType.OpenParen, ParseGroupedExpression!); // TODO null
+        RegisterPrefix(TokenType.If, ParseIfExpression);
         
         // Register infixers
         RegisterInfix(TokenType.Plus, ParseInfixExpression);
@@ -56,6 +57,43 @@ public class Parser
         RegisterInfix(TokenType.NotEquals, ParseInfixExpression);
         RegisterInfix(TokenType.LessThan, ParseInfixExpression);
         RegisterInfix(TokenType.GreaterThan, ParseInfixExpression);
+    }
+    private IExpression? ParseIfExpression()
+    {
+        var token = Current;
+        if (!ExpectNext(TokenType.OpenParen)) { return null; } // TODO null
+        NextToken();
+        var condition = ParseExpression(Precedence.Lowest)!;
+        if (!ExpectNext(TokenType.CloseParen)) { return null; } // TODO null
+        
+        if (!ExpectNext(TokenType.OpenBrace)) { return null; } // TODO null
+        var consequence = ParseBlockStatement();
+
+        BlockStatement? alternative = null;
+        if (NextTokenIs(TokenType.Else))
+        {
+            NextToken();
+            if (!ExpectNext(TokenType.OpenBrace)) { return null; } // TODO null
+            alternative = ParseBlockStatement();
+        }
+
+        return new IfExpression(token, condition, consequence, alternative);
+    }
+    private BlockStatement ParseBlockStatement()
+    {
+        var token = Current;
+        List<IStatement> statements = new();
+
+        NextToken();
+
+        while (!CurrentTokenIs(TokenType.CloseBrace)
+               && !CurrentTokenIs(TokenType.EndOfFile))
+        {
+            var statement = ParseStatement();
+            if (statement is not null) { statements.Add(statement); }
+            NextToken();
+        }
+        return new BlockStatement(token, statements);
     }
     private IExpression? ParseGroupedExpression()
     {
