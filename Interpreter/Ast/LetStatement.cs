@@ -1,7 +1,7 @@
 namespace Interpreter.Ast;
 
 // let <identifier> = <expression>;
-public record class LetStatement(Token Token, Identifier Name, IExpression? Value) : IStatement
+public record LetStatement(Token Token, Identifier Name, IExpression? Value) : IStatement
 {
     public Token Token { get; } = Token ?? throw new ArgumentNullException(nameof(Token));
     public Identifier Name { get; } = Name ?? throw new ArgumentNullException(nameof(Name));

@@ -1,6 +1,6 @@
 namespace Interpreter.Ast;
 
-public record class ExpressionStatement(Token Token, IExpression Expression) : IStatement
+public record ExpressionStatement(Token Token, IExpression Expression) : IStatement
 {
     public Token Token { get; } = Token ?? throw new ArgumentNullException(nameof(Token));
     public IExpression Expression { get; } = Expression;
