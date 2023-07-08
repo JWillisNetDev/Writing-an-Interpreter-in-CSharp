@@ -140,7 +140,7 @@ public class Parser
         return new ExpressionStatement(token, expression);
     }
 
-    public IExpression? ParseExpression(Precedence precedence)
+    private IExpression? ParseExpression(Precedence precedence)
     {
         if (!_prefixParsers.ContainsKey(Current.Type))
         {
@@ -167,7 +167,7 @@ public class Parser
     }
 
     // [0-9]
-    public IExpression? ParseIntegerLiteralExpression()
+    private IExpression? ParseIntegerLiteralExpression()
     {
         if (long.TryParse(Current.Literal, out long value))
         {
@@ -178,7 +178,7 @@ public class Parser
     }
     
     // <prefix><expression>
-    public IExpression? ParsePrefixExpression()
+    private IExpression? ParsePrefixExpression()
     {
         var token = Current;
         
@@ -188,7 +188,7 @@ public class Parser
     }
     
     // <expression> <infix-operator> <expression>
-    public IExpression ParseInfixExpression(IExpression left)
+    private IExpression ParseInfixExpression(IExpression left)
     {
         var token = Current;
         
