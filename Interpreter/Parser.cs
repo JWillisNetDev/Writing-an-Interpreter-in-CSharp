@@ -71,7 +71,7 @@ public class Parser
             IStatement? statement = ParseStatement();
             if (statement is not null)
             {
-                program.Statements.Add(statement);
+                program.AddStatement(statement);
             }
             NextToken();
         }
@@ -224,23 +224,27 @@ public class Parser
 
         if (!ExpectNext(TokenType.Identifier)) { return null; }
         Identifier name = new(Current, Current.Literal);
-        
-        // TODO Skipping expressions for now.
-        if (!ExpectNext(TokenType.Assign)) { return null; }
-        while (CurrentTokenIs(TokenType.Semicolon)) { NextToken(); }
 
-        return new LetStatement(Token: token, Name: name, Value: null); // TODO null
+        if (!ExpectNext(TokenType.Assign)) { return null; }
+        NextToken();
+
+        var value = ParseExpression(Precedence.Lowest);
+
+        if (NextTokenIs(TokenType.Semicolon)) { NextToken(); } // Optional semicolon
+        
+        return new LetStatement(token, name, value); // TODO null
     }
 
     // return <expression|identifier>;
-    private ReturnStatement? ParseReturnStatement()
+    private ReturnStatement ParseReturnStatement()
     {
         Token token = Current;
-        
-        // TODO Skipping expressions for now
-        while (!CurrentTokenIs(TokenType.Semicolon)) { NextToken(); }
 
-        return new ReturnStatement(Token: token, ReturnValue: null); // TODO null
+        NextToken();
+        var returnValue = ParseExpression(Precedence.Lowest); // TODO null
+        if (NextTokenIs(TokenType.Semicolon)) { NextToken(); } // Optional semicolon
+
+        return new ReturnStatement(token, returnValue);
     }
 
     private ExpressionStatement ParseExpressionStatement()

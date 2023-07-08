@@ -1,6 +1,3 @@
-using System.Collections.Immutable;
-using System.Linq.Expressions;
-using System.Runtime.CompilerServices;
 using Interpreter.Ast;
 using Xunit.Abstractions;
 
@@ -15,8 +12,26 @@ public class ParserTests
         _output = output;
     }
 
+    [Theory]
+    [InlineData("let x = 5;", "x", 5)]
+    [InlineData("let y = true;", "y", true)]
+    [InlineData("let foobar = y;", "foobar", "y")]
+    public void ParseProgram_LetStatement_ParsesLetStatementIdentifierAndValue<T>(string input, string expectedIdentifier, T expectedValue)
+    {
+        Lexer lexer = new(input);
+        Parser parser = new(lexer);
+        var program = parser.ParseProgram();
+        AssertCheckParserErrors(parser);
+
+        var statement = Assert.Single(program.Statements);
+        
+        var letStatement = AssertCheckLetStatement(statement, expectedIdentifier);
+        Assert.NotNull(letStatement.Value);
+        AssertCheckLiteralExpression(letStatement.Value, expectedValue);
+    }
+    
     [Fact]
-    public void ParseProgram_LetStatements_ParsesLetStatements()
+    public void ParseProgram_ManyLetStatements_ParsesLetStatements()
     {
         // Assign
         const string input = """
@@ -383,47 +398,38 @@ public class ParserTests
         Assert.Equal(0, parser.Errors.Count);
     }
 
-    private void AssertCheckLiteralExpression<T>(IExpression expression, T expected)
-    {
-        switch (expected)
+    private T AssertCheckLiteralExpression<T>(IExpression expression, T expected) => expected switch
+        // This atrocity is okay because it's in a test :thumbsup:
         {
-            case int i:
-                AssertCheckIntegerLiteral(expression, i);
-                break;
-            case long l:
-                AssertCheckIntegerLiteral(expression, l);
-                break;
-            case string s:
-                AssertCheckIdentifier(expression, s);
-                break;
-            case bool b:
-                AssertCheckBooleanLiteral(expression, b);
-                break;
-            default:
-                Assert.Fail($"Encountered unanticipated literal expression `{expression}`");
-                break;
-        }
-    }
+            int i => (T)(object)(int)AssertCheckIntegerLiteral(expression, i),
+            long i => (T)(object)AssertCheckIntegerLiteral(expression, i),
+            string s => (T)(object)AssertCheckIdentifier(expression, s),
+            bool b => (T)(object)AssertCheckBooleanLiteral(expression, b),
+            _ => throw new NotImplementedException(),
+        };
 
-    private void AssertCheckIntegerLiteral(IExpression expression, long expectedValue)
+    private long AssertCheckIntegerLiteral(IExpression expression, long expectedValue)
     {
         var actualIntLiteral = Assert.IsType<IntegerLiteral>(expression);
         Assert.Equal(expectedValue, actualIntLiteral.Value);
         Assert.Equal(expectedValue.ToString(), actualIntLiteral.TokenLiteral);
+        return actualIntLiteral.Value;
     }
 
-    private void AssertCheckIdentifier(IExpression expression, string value)
+    private string AssertCheckIdentifier(IExpression expression, string value)
     {
         var actualIdentifier = Assert.IsType<Identifier>(expression);
         Assert.Equal(value, actualIdentifier.Value);
         Assert.Equal(value, actualIdentifier.TokenLiteral);
+        return actualIdentifier.Value;
     }
 
-    private void AssertCheckBooleanLiteral(IExpression expression, bool expectedValue)
+    private bool AssertCheckBooleanLiteral(IExpression expression, bool expectedValue)
     {
         var actualBoolLiteral = Assert.IsType<BooleanLiteral>(expression);
         Assert.Equal(expectedValue, actualBoolLiteral.Value);
         Assert.Equal(expectedValue.ToString().ToLowerInvariant(), actualBoolLiteral.TokenLiteral);
+        return actualBoolLiteral.Value;
     }
 
     private void AssertCheckPrefixExpression<T>(IExpression expression, string expectedOperator, T expectedValue)
@@ -439,5 +445,12 @@ public class ParserTests
         AssertCheckLiteralExpression(operatorExpression.Left, expectedLeft);
         Assert.Equal(expectedOperator, operatorExpression.Operator);
         AssertCheckLiteralExpression(operatorExpression.Right, expectedRight);
+    }
+
+    private LetStatement AssertCheckLetStatement(IStatement statement, string expectedIdentifier)
+    {
+        var actual = Assert.IsType<LetStatement>(statement);
+        AssertCheckIdentifier(actual.Name, expectedIdentifier); // TODO null
+        return actual;
     }
 }
