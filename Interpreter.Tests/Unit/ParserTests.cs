@@ -136,7 +136,9 @@ public class ParserTests
     [Theory]
     [InlineData("!5;", "!", 5L)]
     [InlineData("-15;", "-", 15L)]
-    public void ParseProgram_PrefixExpressions_ParsesOperatorAndIntLiteral(string input, string expectedOperator, long expectedValue)
+    [InlineData("!true;", "!", true)]
+    [InlineData("!false;", "!", false)]
+    public void ParseProgram_PrefixExpressions_ParsesOperatorAndIntLiteral<T>(string input, string expectedOperator, T expectedValue)
     {
         Lexer lexer = new(input);
         Parser parser = new(lexer);
@@ -193,6 +195,11 @@ public class ParserTests
     [InlineData("false", "false")]
     [InlineData("3 > 5 == false", "((3 > 5) == false)")]
     [InlineData("3 < 5 == false", "((3 < 5) == false)")]
+    [InlineData("1 + (2 + 3) + 4", "((1 + (2 + 3)) + 4)")]
+    [InlineData("(5 + 5) * 2", "((5 + 5) * 2)")]
+    [InlineData("2 / (5 + 5)", "(2 / (5 + 5))")]
+    [InlineData("-(5 + 5)", "(-(5 + 5))")]
+    [InlineData("!(true == true)", "(!(true == true))")]
     public void ParseProgram_OperationalOrder_OperationsParseInCorrectOrder(string input, string expected)
         // I hate this test and I /HATE/ overriding tostring on records
         // and I have an absolute seething hatred for using strings to provide testing for what can be better expressed using some more practical logical forms

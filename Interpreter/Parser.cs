@@ -40,11 +40,12 @@ public class Parser
         
         // Register prefixers
         RegisterPrefix(TokenType.Identifier, () => new Identifier(Current, Current.Literal));
-        RegisterPrefix(TokenType.Int, ParseIntegerLiteralExpression!);
-        RegisterPrefix(TokenType.Bang, ParsePrefixExpression!);
-        RegisterPrefix(TokenType.Minus, ParsePrefixExpression!);
+        RegisterPrefix(TokenType.Int, ParseIntegerLiteralExpression!); // TODO null
+        RegisterPrefix(TokenType.Bang, ParsePrefixExpression!); // TODO null
+        RegisterPrefix(TokenType.Minus, ParsePrefixExpression!); // TODO null
         RegisterPrefix(TokenType.True, ParseBooleanLiteral);
         RegisterPrefix(TokenType.False, ParseBooleanLiteral);
+        RegisterPrefix(TokenType.OpenParen, ParseGroupedExpression!); // TODO null
         
         // Register infixers
         RegisterInfix(TokenType.Plus, ParseInfixExpression);
@@ -56,7 +57,15 @@ public class Parser
         RegisterInfix(TokenType.LessThan, ParseInfixExpression);
         RegisterInfix(TokenType.GreaterThan, ParseInfixExpression);
     }
-    
+    private IExpression? ParseGroupedExpression()
+    {
+        NextToken();
+        var exp = ParseExpression(Precedence.Lowest);
+        return ExpectNext(TokenType.CloseParen) ?
+            exp :
+            null;
+    }
+
     private IExpression ParseBooleanLiteral() => new BooleanLiteral(Current, CurrentTokenIs(TokenType.True));
 
     public Program ParseProgram()
@@ -87,30 +96,24 @@ public class Parser
     private void RegisterPrefix(TokenType type, Func<IExpression> prefixParser) => _prefixParsers[type] = prefixParser;
 
     private void RegisterInfix(TokenType type, Func<IExpression, IExpression> infixParser) => _infixParsers[type] = infixParser;
-    
-    private IStatement? ParseStatement()
+
+    private IStatement? ParseStatement() => Current.Type switch
     {
-        switch (Current.Type)
-        {
-            case TokenType.Let:
-                return ParseLetStatement();
-            case TokenType.Return:
-                return ParseReturnStatement();
-            default:
-                return ParseExpressionStatement();
-        }
-    }
+        TokenType.Let => ParseLetStatement(),
+        TokenType.Return => ParseReturnStatement(),
+        _ => ParseExpressionStatement(),
+    };
     
     // let <identifier> = <expression>
     private LetStatement? ParseLetStatement()
     {
         Token token = Current;
 
-        if (!ExpectPeek(TokenType.Identifier)) { return null; }
+        if (!ExpectNext(TokenType.Identifier)) { return null; }
         Identifier name = new(Current, Current.Literal);
         
         // TODO Skipping expressions for now.
-        if (!ExpectPeek(TokenType.Assign)) { return null; }
+        if (!ExpectNext(TokenType.Assign)) { return null; }
         while (CurrentTokenIs(TokenType.Semicolon)) { NextToken(); }
 
         return new LetStatement(Token: token, Name: name, Value: null); // TODO null
@@ -147,7 +150,7 @@ public class Parser
         Func<IExpression> prefixParser = _prefixParsers[Current.Type];
         IExpression leftExpression = prefixParser();
 
-        while (!NextTokenIs(TokenType.Semicolon) && precedence < PeekPrecedence())
+        while (!NextTokenIs(TokenType.Semicolon) && precedence < NextPrecedence())
         {
             if (!_infixParsers.ContainsKey(Next.Type))
             {
@@ -201,20 +204,20 @@ public class Parser
 
     private Precedence CurrentPrecedence() => GetPrecedence(Current.Type);
     
-    private Precedence PeekPrecedence() => GetPrecedence(Next.Type);
+    private Precedence NextPrecedence() => GetPrecedence(Next.Type);
     
-    private bool ExpectPeek(TokenType type)
+    private bool ExpectNext(TokenType type)
     {
         if (NextTokenIs(type))
         {
             NextToken();
             return true;
         }
-        PeekError(type);
+        ErrorNext(type);
         return false;
     }
     
     private bool NextTokenIs(TokenType type) => Next.Type == type;
     
-    private void PeekError(TokenType type) => _errors.Add($"expected next token to be `{type}`, but got `{Next.Type}` instead.");
+    private void ErrorNext(TokenType type) => _errors.Add($"expected next token to be `{type}`, but got `{Next.Type}` instead.");
 }
