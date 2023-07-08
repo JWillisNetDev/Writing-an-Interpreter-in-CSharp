@@ -92,7 +92,7 @@ public class ParserTests
 
         Assert.Equal(3, actual.Statements.Count);
 
-        foreach (IStatement statement in actual.Statements)
+        foreach (var statement in actual.Statements)
         {
             Assert.Equal("return", statement.TokenLiteral);
             var actualReturn = Assert.IsType<ReturnStatement>(statement);
@@ -228,8 +228,8 @@ public class ParserTests
         AssertCheckParserErrors(parser);
 
         var statement = Assert.Single(actual.Statements);
-        var actualExpression = Assert.IsType<ExpressionStatement>(statement);
-        AssertCheckLiteralExpression(actualExpression.Expression, expectedValue);
+        var expression = Assert.IsType<ExpressionStatement>(statement).Expression;
+        AssertCheckLiteralExpression(expression, expectedValue);
     }
 
     [Fact]
@@ -244,13 +244,13 @@ public class ParserTests
         AssertCheckParserErrors(parser);
 
         var statement = Assert.Single(actual.Statements);
-        var expressionStatement = Assert.IsType<ExpressionStatement>(statement);
-        var ifExpression = Assert.IsType<IfExpression>(expressionStatement.Expression);
+        var expression = Assert.IsType<ExpressionStatement>(statement).Expression;
+        var ifExpression = Assert.IsType<IfExpression>(expression);
         AssertCheckInfixExpression(ifExpression.Condition, "x", "<", "y");
 
         var consequence = Assert.Single(ifExpression.Consequence.Statements);
-        var consequenceExpressionStatement = Assert.IsType<ExpressionStatement>(consequence);
-        AssertCheckLiteralExpression(consequenceExpressionStatement.Expression, "x");
+        var consequenceExpression = Assert.IsType<ExpressionStatement>(consequence).Expression;
+        AssertCheckLiteralExpression(consequenceExpression, "x");
 
         Assert.Null(ifExpression.Alternative);
     }
@@ -267,20 +267,66 @@ public class ParserTests
         AssertCheckParserErrors(parser);
 
         var statement = Assert.Single(actual.Statements);
-        var expressionStatement = Assert.IsType<ExpressionStatement>(statement);
-        var ifExpression = Assert.IsType<IfExpression>(expressionStatement.Expression);
+        var expression = Assert.IsType<ExpressionStatement>(statement).Expression;
+        var ifExpression = Assert.IsType<IfExpression>(expression);
         AssertCheckInfixExpression(ifExpression.Condition, "x", "<", "y");
 
         var consequence = Assert.Single(ifExpression.Consequence.Statements);
-        var consequenceExpressionStatement = Assert.IsType<ExpressionStatement>(consequence);
-        AssertCheckLiteralExpression(consequenceExpressionStatement.Expression, "x");
+        var consequenceExpression = Assert.IsType<ExpressionStatement>(consequence).Expression;
+        AssertCheckLiteralExpression(consequenceExpression, "x");
 
         Assert.NotNull(ifExpression.Alternative);
         var alternative = Assert.Single(ifExpression.Alternative.Statements);
-        var alternativeExpressionStatement = Assert.IsType<ExpressionStatement>(alternative);
-        AssertCheckLiteralExpression(alternativeExpressionStatement.Expression, "y");
+        var alternativeExpression = Assert.IsType<ExpressionStatement>(alternative).Expression;
+        AssertCheckLiteralExpression(alternativeExpression, "y");
     }
-    
+
+    [Fact]
+    public void ParseProgram_FunctionLiteral_ParsesFunctionLiteral()
+    {
+        const string input = "fn(x, y) { x + y; }";
+        Lexer lexer = new(input);
+        Parser parser = new(lexer);
+
+        Program actual = parser.ParseProgram();
+
+        AssertCheckParserErrors(parser);
+
+        var statement = Assert.Single(actual.Statements);
+        var expression = Assert.IsType<ExpressionStatement>(statement).Expression;
+        
+        var functionLiteral = Assert.IsType<FunctionLiteral>(expression);
+        Assert.Equal(2, functionLiteral.Parameters.Length);
+        AssertCheckLiteralExpression(functionLiteral.Parameters[0], "x");
+        AssertCheckLiteralExpression(functionLiteral.Parameters[1], "y");
+
+        var bodyStatement = Assert.Single(functionLiteral.Body.Statements);
+        var bodyExpression = Assert.IsType<ExpressionStatement>(bodyStatement).Expression;
+        AssertCheckInfixExpression(bodyExpression, "x", "+", "y");
+    }
+
+    [Theory]
+    [InlineData("fn() {}", new string[] {})]
+    [InlineData("fn(x) {}", new [] { "x" })]
+    [InlineData("fn(x, y, z) {}", new [] { "x", "y", "z" })]
+    [InlineData("fn(foo, bar) {}", new [] { "foo", "bar" })]
+    public void ParseProgram_FunctionLiteralsParameters_ParsesFunctionLiteralExpectedParameters(string input, string[] expectedParams)
+    {
+        Lexer lexer = new(input);
+        Parser parser = new(lexer);
+
+        Program actual = parser.ParseProgram();
+
+        AssertCheckParserErrors(parser);
+
+        var statement = Assert.Single(actual.Statements);
+        var expression = Assert.IsType<ExpressionStatement>(statement).Expression;
+        
+        var functionLiteral = Assert.IsType<FunctionLiteral>(expression);
+        Assert.Equal(expectedParams.Length, functionLiteral.Parameters.Length);
+        Assert.Equivalent(expectedParams, functionLiteral.Parameters.Select(p => p.Value));
+    }
+
     private void AssertCheckParserErrors(Parser parser)
     {
         foreach (string error in parser.Errors) { _output.WriteLine(error); }

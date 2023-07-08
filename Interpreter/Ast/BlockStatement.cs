@@ -1,9 +1,12 @@
 namespace Interpreter.Ast;
 
-public record BlockStatement(Token Token, IEnumerable<IStatement> Statements) : IStatement
+public record BlockStatement(Token Token, ImmutableArray<IStatement> Statements) : IStatement
 {
+    public BlockStatement(Token token, IEnumerable<IStatement> statements) : this(token, statements.ToImmutableArray())
+    {}
+    
     public Token Token { get; } = Token ?? throw new ArgumentNullException(nameof(Token));
-    public IEnumerable<IStatement> Statements { get; } = Statements;
+    public ImmutableArray<IStatement> Statements { get; } = Statements;
 
     public string TokenLiteral => Token.Literal;
     public void StatementNode()

@@ -39,14 +39,15 @@ public class Parser
         NextToken();
         
         // Register prefixers
-        RegisterPrefix(TokenType.Identifier, () => new Identifier(Current, Current.Literal));
+        RegisterPrefix(TokenType.Identifier, ParseIdentifier);
         RegisterPrefix(TokenType.Int, ParseIntegerLiteralExpression!); // TODO null
         RegisterPrefix(TokenType.Bang, ParsePrefixExpression!); // TODO null
         RegisterPrefix(TokenType.Minus, ParsePrefixExpression!); // TODO null
         RegisterPrefix(TokenType.True, ParseBooleanLiteral);
         RegisterPrefix(TokenType.False, ParseBooleanLiteral);
         RegisterPrefix(TokenType.OpenParen, ParseGroupedExpression!); // TODO null
-        RegisterPrefix(TokenType.If, ParseIfExpression);
+        RegisterPrefix(TokenType.If, ParseIfExpression!);
+        RegisterPrefix(TokenType.Function, ParseFunctionLiteral!);
         
         // Register infixers
         RegisterInfix(TokenType.Plus, ParseInfixExpression);
@@ -58,7 +59,62 @@ public class Parser
         RegisterInfix(TokenType.LessThan, ParseInfixExpression);
         RegisterInfix(TokenType.GreaterThan, ParseInfixExpression);
     }
-    private IExpression? ParseIfExpression()
+
+    public Program ParseProgram()
+    {
+        Program program = new();
+
+        while (!CurrentTokenIs(TokenType.EndOfFile))
+        {
+            IStatement? statement = ParseStatement();
+            if (statement is not null)
+            {
+                program.Statements.Add(statement);
+            }
+            NextToken();
+        }
+
+        return program;
+    }
+    
+    private FunctionLiteral? ParseFunctionLiteral()
+    {
+        var token = Current;
+        if (!ExpectNext(TokenType.OpenParen)) { return null; } // TODO null
+        var parameters = ParseFunctionParameters();
+        if (parameters is null) { return null; } // TODO null
+
+        if (!ExpectNext(TokenType.OpenBrace)) { return null; } // TODO null
+        var body = ParseBlockStatement();
+
+        return new FunctionLiteral(token, parameters, body);
+        
+        IEnumerable<Identifier>? ParseFunctionParameters()
+        {
+            List<Identifier> identifiers = new();
+            
+            if (NextTokenIs(TokenType.CloseParen))
+            {
+                NextToken();
+                return identifiers;
+            }
+            
+            NextToken();
+            identifiers.Add(ParseIdentifier());
+            while (NextTokenIs(TokenType.Comma))
+            {
+                NextToken();
+                NextToken();
+                identifiers.Add(ParseIdentifier());
+            }
+            
+            return ExpectNext(TokenType.CloseParen) ?
+                identifiers :
+                null; // TODO null
+        }
+    }
+
+    private IfExpression? ParseIfExpression()
     {
         var token = Current;
         if (!ExpectNext(TokenType.OpenParen)) { return null; } // TODO null
@@ -79,6 +135,7 @@ public class Parser
 
         return new IfExpression(token, condition, consequence, alternative);
     }
+    
     private BlockStatement ParseBlockStatement()
     {
         var token = Current;
@@ -95,6 +152,7 @@ public class Parser
         }
         return new BlockStatement(token, statements);
     }
+    
     private IExpression? ParseGroupedExpression()
     {
         NextToken();
@@ -103,25 +161,10 @@ public class Parser
             exp :
             null;
     }
+    
+    private Identifier ParseIdentifier() => new Identifier(Current, Current.Literal);
 
-    private IExpression ParseBooleanLiteral() => new BooleanLiteral(Current, CurrentTokenIs(TokenType.True));
-
-    public Program ParseProgram()
-    {
-        Program program = new();
-
-        while (!CurrentTokenIs(TokenType.EndOfFile))
-        {
-            IStatement? statement = ParseStatement();
-            if (statement is not null)
-            {
-                program.Statements.Add(statement);
-            }
-            NextToken();
-        }
-
-        return program;
-    }
+    private BooleanLiteral ParseBooleanLiteral() => new BooleanLiteral(Current, CurrentTokenIs(TokenType.True));
 
     private bool CurrentTokenIs(TokenType type) => Current.Type == type;
 
