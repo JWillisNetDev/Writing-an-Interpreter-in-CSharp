@@ -6,4 +6,5 @@ public enum RuntimeObjectType
     NullObject,
     IntegerObject,
     BooleanObject,
+    ReturnObject,
 }

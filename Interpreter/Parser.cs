@@ -241,7 +241,7 @@ public class Parser
         Token token = Current;
 
         NextToken();
-        var returnValue = ParseExpression(Precedence.Lowest); // TODO null
+        var returnValue = ParseExpression(Precedence.Lowest)!; // TODO null
         if (NextTokenIs(TokenType.Semicolon)) { NextToken(); } // Optional semicolon
 
         return new ReturnStatement(token, returnValue);

@@ -5,26 +5,29 @@ namespace Interpreter;
 
 public static class Evaluator
 {
-    public static class Constants
+    public static class RuntimeConstants
     {
         public static NullObject Null { get; } = new();
         public static BooleanObject True { get; } = new(true);
         public static BooleanObject False { get; } = new(false);
     }
 
-    public static IRuntimeObject? Evaluate(INode node)
+    public static IRuntimeObject Evaluate(INode node)
     {
         switch (node)
         {
             // Statements
             case Program program:
-                return EvaluateStatements(program.Statements);
+                return EvaluateProgram(program);
             
             case ExpressionStatement statement:
                 return Evaluate(statement.Expression);
             
             case BlockStatement statement:
-                return EvaluateStatements(statement.Statements);
+                return EvaluateBlockStatement(statement);
+            
+            case ReturnStatement statement:
+                return new ReturnValueObject(Evaluate(statement.ReturnValue));
             
             // Expressions
             case IntegerLiteral integer:
@@ -43,9 +46,9 @@ public static class Evaluator
                 return EvaluateIfExpression(ifExpr);
         }
 
-        return Constants.Null;
+        return RuntimeConstants.Null;
     }
-    
+
     private static IRuntimeObject EvaluateIfExpression(IfExpression ifExpr)
     {
         var condition = Evaluate(ifExpr.Condition);
@@ -58,16 +61,30 @@ public static class Evaluator
         {
             return Evaluate(ifExpr.Alternative);
         }
-        return Constants.Null;
+        return RuntimeConstants.Null;
     }
 
     private static bool IsTruthy(IRuntimeObject? obj) => obj switch
     {
-        not null when obj == Constants.Null => false,
+        not null when obj == RuntimeConstants.Null => false,
         BooleanObject b => b.Value,
         null => false,
         _ => true,
     };
+    
+    private static IRuntimeObject EvaluateBlockStatement(BlockStatement block)
+    {
+        IRuntimeObject result = RuntimeConstants.Null;
+        foreach (var statement in block.Statements)
+        {
+            result = Evaluate(statement);
+            if (result is ReturnValueObject)
+            {
+                return result;
+            }
+        }
+        return result;
+    }
 
     private static IRuntimeObject EvaluateInfixExpression(string infixOperator, IRuntimeObject? left, IRuntimeObject? right)
     {
@@ -87,7 +104,7 @@ public static class Evaluator
             return BooleanNativeAsObject(left != right);
         }
 
-        return Constants.Null;
+        return RuntimeConstants.Null;
 
         IRuntimeObject EvaluateIntegerInfixExpression(string op, long lhsValue, long rhsValue) => op switch
         {
@@ -99,7 +116,7 @@ public static class Evaluator
             ">" => BooleanNativeAsObject(lhsValue > rhsValue),
             "==" => BooleanNativeAsObject(lhsValue == rhsValue),
             "!=" => BooleanNativeAsObject(lhsValue != rhsValue),
-            _ => Constants.Null,
+            _ => RuntimeConstants.Null,
         };
     }
 
@@ -109,32 +126,37 @@ public static class Evaluator
         {
             "!" => EvaluateBangOperatorExpression(right),
             "-" => EvaluateMinusOperatorExpression(right),
-            _ => Constants.Null,
+            _ => RuntimeConstants.Null,
         };
 
         IRuntimeObject EvaluateBangOperatorExpression(IRuntimeObject? r) => r switch
         {
-            BooleanObject b when b == Constants.True => Constants.False,
-            BooleanObject b when b == Constants.False => Constants.True,
-            NullObject o => Constants.True,
-            _ => Constants.False,
+            BooleanObject b when b == RuntimeConstants.True => RuntimeConstants.False,
+            BooleanObject b when b == RuntimeConstants.False => RuntimeConstants.True,
+            NullObject o => RuntimeConstants.True,
+            _ => RuntimeConstants.False,
         };
 
         IRuntimeObject EvaluateMinusOperatorExpression(IRuntimeObject? r) => r switch
         {
             IntegerObject i => new IntegerObject(-i.Value),
-            _ => Constants.Null,
+            _ => RuntimeConstants.Null,
         };
     }
 
-    private static IRuntimeObject BooleanNativeAsObject(bool booleanValue) => booleanValue ? Constants.True : Constants.False;
+    private static IRuntimeObject BooleanNativeAsObject(bool booleanValue) => booleanValue ? RuntimeConstants.True : RuntimeConstants.False;
 
-    private static IRuntimeObject? EvaluateStatements(IEnumerable<IStatement> programStatements)
+    private static IRuntimeObject EvaluateProgram(Program program)
     {
-        IRuntimeObject? result = null;
-        foreach (var statement in programStatements)
+        IRuntimeObject result = RuntimeConstants.Null;
+        foreach (var statement in program.Statements)
         {
             result = Evaluate(statement);
+
+            if (result is ReturnValueObject retObj)
+            {
+                return retObj.Value;
+            }
         }
         return result;
     }
