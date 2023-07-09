@@ -8,6 +8,8 @@ public class EvaluatorTests
     public void Evaluate_IntegerLiterals_RuntimeIntegerObjects(string input, long expected)
     {
         var actual = TestEval(input);
+        Assert.NotNull(actual);
+        Assert.NotSame(actual, Evaluator.Constants.Null);
         AssertCheckIntegerObject(actual, expected);
     }
 
@@ -17,6 +19,8 @@ public class EvaluatorTests
     public void Evaluate_MinusPrefixOperatorWithIntegerLiteral_NegatesIntegers(string input, long expected)
     {
         var actual = TestEval(input);
+        Assert.NotNull(actual);
+        Assert.NotSame(actual, Evaluator.Constants.Null);
         AssertCheckIntegerObject(actual, expected);
     }
 
@@ -35,6 +39,8 @@ public class EvaluatorTests
     public void Evaluate_InfixOperatorsWithIntegerExpressions_EvaluatesExpressions(string input, long expected)
     {
         var actual = TestEval(input);
+        Assert.NotNull(actual);
+        Assert.NotSame(actual, Evaluator.Constants.Null);
         AssertCheckIntegerObject(actual, expected);
     }
 
@@ -44,6 +50,8 @@ public class EvaluatorTests
     public void Evaluate_BooleanExpressions_RuntimeBooleanObjects(string input, bool expected)
     {
         var actual = TestEval(input);
+        Assert.NotNull(actual);
+        Assert.NotSame(actual, Evaluator.Constants.Null);
         AssertCheckBooleanObject(actual, expected);
     }
 
@@ -57,6 +65,8 @@ public class EvaluatorTests
     public void Evaluate_NotOperator_LogicallyNegatesIntsAndBools(string input, bool expected)
     {
         var actual = TestEval(input);
+        Assert.NotNull(actual);
+        Assert.NotSame(actual, Evaluator.Constants.Null);
         AssertCheckBooleanObject(actual, expected);
     }
 
@@ -73,6 +83,8 @@ public class EvaluatorTests
     public void Evaluate_IntegerExpressionsWithInfix_LogicallyEvaluatesExpressionsToBooleans(string input, bool expected)
     {
         var actual = TestEval(input);
+        Assert.NotNull(actual);
+        Assert.NotSame(actual, Evaluator.Constants.Null);
         AssertCheckBooleanObject(actual, expected);
     }
     
@@ -88,18 +100,65 @@ public class EvaluatorTests
     public void Evaluate_BooleanExpressionsWithInfix_LogicallyEvaluatesExpressionsToBooleans(string input, bool expected)
     {
         var actual = TestEval(input);
+        Assert.NotNull(actual);
+        Assert.NotSame(actual, Evaluator.Constants.Null);
         AssertCheckBooleanObject(actual, expected);
     }
 
-    private static IRuntimeObject TestEval(string input)
+    [Theory]
+    [InlineData("if (true) { 10 }", 10L)]
+    [InlineData("if (false) { 10 }", null)]
+    [InlineData("if (1) { 10 }", 10L)]
+    [InlineData("if (1 < 2) { 10 }", 10L)]
+    [InlineData("if (1 > 2) { 10 }", null)]
+    public void Evaluate_IfExpressionsWithoutElse_ReturnsCorrectConsequences(string input, long? expected)
+    {
+        var evaluated = TestEval(input);
+        Assert.NotNull(evaluated);
+        if (expected.HasValue)
+        {
+            Assert.NotSame(Evaluator.Constants.Null, evaluated);
+            AssertCheckIntegerObject(evaluated, expected.Value);
+        }
+        else
+        {
+            AssertCheckNullObject(evaluated);
+        }
+    }
+
+    [Theory]
+    [InlineData("if (1 > 2) { 10 } else { 20 }", 20L)]
+    [InlineData("if (1 < 2) { 10 } else { 20 }", 10L)]
+    [InlineData("if (1 < 2) { 10 } else { ; }", null)]
+    public void Evaluate_IfExpressionsWithElse_ReturnsCorrectConsequences(string input, long? expected)
+    {
+        var evaluated = TestEval(input);
+        Assert.NotNull(evaluated);
+        if (expected.HasValue)
+        {
+            Assert.NotSame(Evaluator.Constants.Null, evaluated);
+            AssertCheckIntegerObject(evaluated, expected.Value);
+        }
+        else
+        {
+            AssertCheckNullObject(evaluated);
+        }
+    }
+    
+    private static IRuntimeObject? TestEval(string input)
     {
         Lexer lexer = new(input);
         Parser parser = new(lexer);
         var program = parser.ParseProgram();
         var evaluated = Evaluator.Evaluate(program);
-        Assert.NotNull(evaluated);
-        Assert.NotSame(Evaluator.Constants.Null, evaluated);
         return evaluated;
+    }
+    
+    private NullObject AssertCheckNullObject(IRuntimeObject evaluated)
+    {
+        var nullObj = Assert.IsType<NullObject>(evaluated);
+        Assert.Same(Evaluator.Constants.Null, evaluated);
+        return nullObj;
     }
     
     private static BooleanObject AssertCheckBooleanObject(IRuntimeObject actual, bool expected)
