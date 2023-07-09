@@ -1,4 +1,4 @@
-namespace Interpreter.Eval.Objects;
+namespace Interpreter.Objects;
 
 public interface IRuntimeObject
 {
