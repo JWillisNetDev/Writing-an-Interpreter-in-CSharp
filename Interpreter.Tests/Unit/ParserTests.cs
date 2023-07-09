@@ -1,4 +1,3 @@
-using Interpreter.Ast;
 using Xunit.Abstractions;
 
 namespace Interpreter.Tests.Unit;

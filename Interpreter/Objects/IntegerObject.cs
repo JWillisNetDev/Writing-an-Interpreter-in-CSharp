@@ -2,9 +2,9 @@ namespace Interpreter.Objects;
 
 public class IntegerObject: IRuntimeObject
 {
-    public int Value { get; set; }
+    public long Value { get; set; }
     
-    public IntegerObject(int value)
+    public IntegerObject(long value)
     {
         Value = value;
     }
