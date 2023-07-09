@@ -20,9 +20,12 @@ public class Repl
             {
                 PrintParserErrors(parser, writer);
                 continue;
-                
             }
-            writer.WriteLine(program.ToString());
+            
+            if (Evaluator.Evaluate(program) is { } evaluated)
+            {
+                writer.WriteLine(evaluated.Inspect());
+            }
         }
     }
 
