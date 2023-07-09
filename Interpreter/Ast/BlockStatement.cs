@@ -6,7 +6,7 @@ public record BlockStatement(Token Token, IReadOnlyList<IStatement> Statements) 
     {}
     
     public Token Token { get; } = Token ?? throw new ArgumentNullException(nameof(Token));
-    public IReadOnlyList<IStatement> Statements { get; } = Statements.ToList().AsReadOnly();
+    public IReadOnlyList<IStatement> Statements { get; } = Statements ?? throw new ArgumentNullException(nameof(Statements));
 
     public string TokenLiteral => Token.Literal;
     public void StatementNode()

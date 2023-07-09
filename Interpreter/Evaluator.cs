@@ -23,6 +23,9 @@ public static class Evaluator
             case ExpressionStatement statement:
                 return Evaluate(statement.Expression);
             
+            case BlockStatement statement:
+                return EvaluateStatements(statement.Statements);
+            
             // Expressions
             case IntegerLiteral integer:
                 return new IntegerObject(integer.Value);
@@ -35,11 +38,37 @@ public static class Evaluator
             
             case InfixExpression infix:
                 return EvaluateInfixExpression(infix.Operator, Evaluate(infix.Left), Evaluate(infix.Right));
+            
+            case IfExpression ifExpr:
+                return EvaluateIfExpression(ifExpr);
         }
 
         return Constants.Null;
     }
     
+    private static IRuntimeObject EvaluateIfExpression(IfExpression ifExpr)
+    {
+        var condition = Evaluate(ifExpr.Condition);
+        
+        if (IsTruthy(condition))
+        {
+            return Evaluate(ifExpr.Consequence);
+        }
+        else if (ifExpr.Alternative is not null)
+        {
+            return Evaluate(ifExpr.Alternative);
+        }
+        return Constants.Null;
+    }
+
+    private static bool IsTruthy(IRuntimeObject? obj) => obj switch
+    {
+        not null when obj == Constants.Null => false,
+        BooleanObject b => b.Value,
+        null => false,
+        _ => true,
+    };
+
     private static IRuntimeObject EvaluateInfixExpression(string infixOperator, IRuntimeObject? left, IRuntimeObject? right)
     {
         if (left is IntegerObject lhs

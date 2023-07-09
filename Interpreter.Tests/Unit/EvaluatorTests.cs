@@ -129,7 +129,7 @@ public class EvaluatorTests
     [Theory]
     [InlineData("if (1 > 2) { 10 } else { 20 }", 20L)]
     [InlineData("if (1 < 2) { 10 } else { 20 }", 10L)]
-    [InlineData("if (1 < 2) { 10 } else { ; }", null)]
+    [InlineData("if (1 > 2) { 10 } else { ; }", null)]
     public void Evaluate_IfExpressionsWithElse_ReturnsCorrectConsequences(string input, long? expected)
     {
         var evaluated = TestEval(input);
