@@ -13,12 +13,24 @@ public class Repl
             if (line is null) { return; }
 
             Lexer lexer = new(line);
-            for (Token token = lexer.MoveNext();
-                 token.Type != TokenType.EndOfFile;
-                 token = lexer.MoveNext())
+            Parser parser = new(lexer);
+
+            var program = parser.ParseProgram();
+            if (parser.Errors.Count > 0)
             {
-                writer.WriteLine($"{token}");
+                PrintParserErrors(parser, writer);
+                continue;
+                
             }
+            writer.WriteLine(program.ToString());
+        }
+    }
+
+    private static void PrintParserErrors(Parser parser, TextWriter writer)
+    {
+        foreach (var error in parser.Errors)
+        {
+            writer.WriteLine($"\t{error}");
         }
     }
 }
