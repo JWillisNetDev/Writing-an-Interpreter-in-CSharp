@@ -69,7 +69,23 @@ public class EvaluatorTests
     [InlineData("1 != 1", false)]
     [InlineData("1 == 2", false)]
     [InlineData("1 != 2", true)]
-    public void Evaluate_BooleanExpressionsWithInfix_LogicallyEvaluatesExpressions(string input, bool expected)
+
+    public void Evaluate_IntegerExpressionsWithInfix_LogicallyEvaluatesExpressionsToBooleans(string input, bool expected)
+    {
+        var actual = TestEval(input);
+        AssertCheckBooleanObject(actual, expected);
+    }
+    
+    [Theory]
+    [InlineData("true == true", true)]
+    [InlineData("false == true", false)]
+    [InlineData("false == false", true)]
+    [InlineData("false != true", true)]
+    [InlineData("(1 < 2) == true", true)]
+    [InlineData("(1 < 2) == false", false)]
+    [InlineData("(1 > 2) == false", true)]
+    [InlineData("(1 > 2) == true", false)]
+    public void Evaluate_BooleanExpressionsWithInfix_LogicallyEvaluatesExpressionsToBooleans(string input, bool expected)
     {
         var actual = TestEval(input);
         AssertCheckBooleanObject(actual, expected);

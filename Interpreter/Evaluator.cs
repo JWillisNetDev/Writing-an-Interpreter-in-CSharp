@@ -42,11 +42,23 @@ public static class Evaluator
     
     private static IRuntimeObject EvaluateInfixExpression(string infixOperator, IRuntimeObject? left, IRuntimeObject? right)
     {
-        return (left, right) switch
+        if (left is IntegerObject lhs
+            && right is IntegerObject rhs)
         {
-            (IntegerObject l, IntegerObject r) => EvaluateIntegerInfixExpression(infixOperator, l.Value, r.Value),
-            _ => Constants.Null,
-        };
+            return EvaluateIntegerInfixExpression(infixOperator, lhs.Value, rhs.Value);
+        }
+
+        if (infixOperator == "==")
+        {
+            return BooleanNativeAsObject(left == right);
+        }
+        
+        if (infixOperator == "!=")
+        {
+            return BooleanNativeAsObject(left != right);
+        }
+
+        return Constants.Null;
 
         IRuntimeObject EvaluateIntegerInfixExpression(string op, long lhsValue, long rhsValue) => op switch
         {
