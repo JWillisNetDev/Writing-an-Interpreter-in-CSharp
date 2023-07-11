@@ -20,7 +20,7 @@ public class Parser
     public IReadOnlyDictionary<TokenType, Func<IExpression>> PrefixParsers => _prefixParsers.AsReadOnly();
     
     // Public readonly static properties
-    public static IReadOnlyDictionary<TokenType, Precedence> Precedences => new Dictionary<TokenType, Precedence>()
+    public static IReadOnlyDictionary<TokenType, Precedence> Precedences { get; } = new Dictionary<TokenType, Precedence>()
     {
         { TokenType.Equals, Precedence.Equals },
         { TokenType.NotEquals, Precedence.Equals },
