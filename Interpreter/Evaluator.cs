@@ -13,25 +13,31 @@ public static class Evaluator
         public static BooleanObject False { get; } = new(false);
     }
 
-    public static IRuntimeObject Evaluate(INode node)
+    public static IRuntimeObject Evaluate(INode node, Environment env)
     {
         IRuntimeObject value, right, left;
         switch (node)
         {
             // Statements
             case Program program:
-                return EvaluateProgram(program);
+                return EvaluateProgram(program, env);
             
             case ExpressionStatement statement:
-                return Evaluate(statement.Expression);
+                return Evaluate(statement.Expression, env);
             
             case BlockStatement statement:
-                return EvaluateBlockStatement(statement);
+                return EvaluateBlockStatement(statement, env);
             
             case ReturnStatement statement:
-                value = Evaluate(statement.ReturnValue);
+                value = Evaluate(statement.ReturnValue, env);
                 return IsError(value) ? value : new ReturnValueObject(value);
             
+            case LetStatement statement:
+                value = Evaluate(statement.Value!, env);
+                if (IsError(value)) { return value; }
+                env.Set(statement.Name.Value, value);
+                return value;
+
             // Expressions
             case IntegerLiteral integer:
                 return new IntegerObject(integer.Value);
@@ -40,26 +46,32 @@ public static class Evaluator
                 return BooleanNativeAsObject(boolean.Value);
             
             case PrefixExpression prefix:
-                right = Evaluate(prefix.Right);
+                right = Evaluate(prefix.Right, env);
                 return IsError(right) ? right : EvaluatePrefixExpression(prefix.Operator, right);
             
             case InfixExpression infix:
-                left = Evaluate(infix.Left);
+                left = Evaluate(infix.Left, env);
                 if (IsError(left)) { return left; }
 
-                right = Evaluate(infix.Right);
+                right = Evaluate(infix.Right, env);
                 return IsError(right) ? right : EvaluateInfixExpression(infix.Operator, left, right);
             
             case IfExpression ifExpr:
-                return EvaluateIfExpression(ifExpr);
+                return EvaluateIfExpression(ifExpr, env);
+            
+            // Identifiers
+            case Identifier identifier:
+                return EvaluateIdentifier(identifier, env);
         }
 
         return RuntimeConstants.Null;
     }
+    private static IRuntimeObject EvaluateIdentifier(Identifier identifier, Environment env)
+        => env.TryGet(identifier.Value, out var obj) ? obj : Error($"identifier not found: {identifier.Value}");
 
-    private static IRuntimeObject EvaluateIfExpression(IfExpression ifExpr)
+    private static IRuntimeObject EvaluateIfExpression(IfExpression ifExpr, Environment env)
     {
-        var condition = Evaluate(ifExpr.Condition);
+        var condition = Evaluate(ifExpr.Condition, env);
 
         if (IsError(condition))
         {
@@ -67,11 +79,11 @@ public static class Evaluator
         }
         else if (IsTruthy(condition))
         {
-            return Evaluate(ifExpr.Consequence);
+            return Evaluate(ifExpr.Consequence, env);
         }
         else if (ifExpr.Alternative is not null)
         {
-            return Evaluate(ifExpr.Alternative);
+            return Evaluate(ifExpr.Alternative, env);
         }
         return RuntimeConstants.Null;
     }
@@ -88,12 +100,12 @@ public static class Evaluator
         _ => true,
     };
     
-    private static IRuntimeObject EvaluateBlockStatement(BlockStatement block)
+    private static IRuntimeObject EvaluateBlockStatement(BlockStatement block, Environment env)
     {
         IRuntimeObject result = RuntimeConstants.Null;
         foreach (var statement in block.Statements)
         {
-            result = Evaluate(statement);
+            result = Evaluate(statement, env);
             if (result.Type is RuntimeObjectType.ReturnObject or RuntimeObjectType.ErrorObject) { return result; }
         }
         return result;
@@ -160,12 +172,12 @@ public static class Evaluator
 
     private static IRuntimeObject BooleanNativeAsObject(bool booleanValue) => booleanValue ? RuntimeConstants.True : RuntimeConstants.False;
 
-    private static IRuntimeObject EvaluateProgram(Program program)
+    private static IRuntimeObject EvaluateProgram(Program program, Environment env)
     {
         IRuntimeObject result = RuntimeConstants.Null;
         foreach (var statement in program.Statements)
         {
-            result = Evaluate(statement);
+            result = Evaluate(statement, env);
 
             if (result is ReturnValueObject ret) { return ret.Value; }
             if (result is RuntimeErrorObject err) { return err; }

@@ -200,6 +200,7 @@ public class EvaluatorTests
             return 1;
         }
         """, "unknown operator: BooleanObject + BooleanObject")]
+    [InlineData("foobar", "identifier not found: foobar")]
     public void Evaluate_ErrorHandling_CreatesExpectedErrorMessages(string input, string expected)
     {
         var actual = TestEval(input);
@@ -208,13 +209,26 @@ public class EvaluatorTests
         Assert.NotEmpty(errorObject.Message);
         Assert.Equal(expected, errorObject.Message);
     }
+
+    [Theory]
+    [InlineData("let a = 5; a;", 5L)]
+    [InlineData("let a = 5 * 5; a;", 25L)]
+    [InlineData("let a = 5; let b = a; b;", 5L)]
+    [InlineData("let a = 5; let b = a; let c = a + b + 5 c;", 15L)]
+    public void Evaluate_LetStatements_CreatesExpectedBindingsAndEvaluatesVariables(string input, long expected)
+    {
+        var actual = TestEval(input);
+        Assert.NotNull(actual);
+        AssertCheckIntegerObject(actual, expected);
+    }
     
     private static IRuntimeObject? TestEval(string input)
     {
         Lexer lexer = new(input);
         Parser parser = new(lexer);
+        Environment env = new();
         var program = parser.ParseProgram();
-        var evaluated = Evaluator.Evaluate(program);
+        var evaluated = Evaluator.Evaluate(program, env);
         return evaluated;
     }
 

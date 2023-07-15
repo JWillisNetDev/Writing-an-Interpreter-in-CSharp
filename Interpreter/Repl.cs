@@ -6,6 +6,7 @@ public class Repl
 
     public void Start(TextReader reader, TextWriter writer)
     {
+        Environment env = new();
         while (true)
         {
             writer.Write(Prompt);
@@ -22,7 +23,7 @@ public class Repl
                 continue;
             }
             
-            if (Evaluator.Evaluate(program) is { } evaluated)
+            if (Evaluator.Evaluate(program, env) is { } evaluated)
             {
                 writer.WriteLine(evaluated.Inspect());
             }
