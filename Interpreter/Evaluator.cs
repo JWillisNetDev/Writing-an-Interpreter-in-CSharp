@@ -1,3 +1,4 @@
+using System.Linq.Expressions;
 using Interpreter.Ast;
 using Interpreter.Objects;
 
@@ -14,6 +15,7 @@ public static class Evaluator
 
     public static IRuntimeObject Evaluate(INode node)
     {
+        IRuntimeObject value, right, left;
         switch (node)
         {
             // Statements
@@ -27,7 +29,8 @@ public static class Evaluator
                 return EvaluateBlockStatement(statement);
             
             case ReturnStatement statement:
-                return new ReturnValueObject(Evaluate(statement.ReturnValue));
+                value = Evaluate(statement.ReturnValue);
+                return IsError(value) ? value : new ReturnValueObject(value);
             
             // Expressions
             case IntegerLiteral integer:
@@ -37,10 +40,15 @@ public static class Evaluator
                 return BooleanNativeAsObject(boolean.Value);
             
             case PrefixExpression prefix:
-                return EvaluatePrefixExpression(prefix.Operator, Evaluate(prefix.Right));
+                right = Evaluate(prefix.Right);
+                return IsError(right) ? right : EvaluatePrefixExpression(prefix.Operator, right);
             
             case InfixExpression infix:
-                return EvaluateInfixExpression(infix.Operator, Evaluate(infix.Left), Evaluate(infix.Right));
+                left = Evaluate(infix.Left);
+                if (IsError(left)) { return left; }
+
+                right = Evaluate(infix.Right);
+                return IsError(right) ? right : EvaluateInfixExpression(infix.Operator, left, right);
             
             case IfExpression ifExpr:
                 return EvaluateIfExpression(ifExpr);
@@ -52,8 +60,12 @@ public static class Evaluator
     private static IRuntimeObject EvaluateIfExpression(IfExpression ifExpr)
     {
         var condition = Evaluate(ifExpr.Condition);
-        
-        if (IsTruthy(condition))
+
+        if (IsError(condition))
+        {
+            return condition;
+        }
+        else if (IsTruthy(condition))
         {
             return Evaluate(ifExpr.Consequence);
         }
@@ -64,6 +76,10 @@ public static class Evaluator
         return RuntimeConstants.Null;
     }
 
+    private static RuntimeErrorObject Error(string message) => new(message);
+
+    private static bool IsError(IRuntimeObject? obj) => obj is { Type: RuntimeObjectType.ErrorObject };
+    
     private static bool IsTruthy(IRuntimeObject? obj) => obj switch
     {
         not null when obj == RuntimeConstants.Null => false,
@@ -78,16 +94,18 @@ public static class Evaluator
         foreach (var statement in block.Statements)
         {
             result = Evaluate(statement);
-            if (result is ReturnValueObject)
-            {
-                return result;
-            }
+            if (result.Type is RuntimeObjectType.ReturnObject or RuntimeObjectType.ErrorObject) { return result; }
         }
         return result;
     }
 
     private static IRuntimeObject EvaluateInfixExpression(string infixOperator, IRuntimeObject? left, IRuntimeObject? right)
     {
+        if (left?.Type != right?.Type)
+        {
+            return Error($"type mismatch: {left.Type} {infixOperator} {right.Type}");
+        }
+        
         if (left is IntegerObject lhs
             && right is IntegerObject rhs)
         {
@@ -104,7 +122,7 @@ public static class Evaluator
             return BooleanNativeAsObject(left != right);
         }
 
-        return RuntimeConstants.Null;
+        return Error($"unknown operator: {left?.Type} {infixOperator} {right?.Type}");
 
         IRuntimeObject EvaluateIntegerInfixExpression(string op, long lhsValue, long rhsValue) => op switch
         {
@@ -116,7 +134,7 @@ public static class Evaluator
             ">" => BooleanNativeAsObject(lhsValue > rhsValue),
             "==" => BooleanNativeAsObject(lhsValue == rhsValue),
             "!=" => BooleanNativeAsObject(lhsValue != rhsValue),
-            _ => RuntimeConstants.Null,
+            _ => Error($"unknown operator: {left.Type} {infixOperator} {right.Type}"),
         };
     }
 
@@ -126,21 +144,17 @@ public static class Evaluator
         {
             "!" => EvaluateBangOperatorExpression(right),
             "-" => EvaluateMinusOperatorExpression(right),
-            _ => RuntimeConstants.Null,
+            _ => Error($"unknown operator: {prefixOperator} {right?.Type}"),
         };
-
-        IRuntimeObject EvaluateBangOperatorExpression(IRuntimeObject? r) => r switch
-        {
-            BooleanObject b when b == RuntimeConstants.True => RuntimeConstants.False,
-            BooleanObject b when b == RuntimeConstants.False => RuntimeConstants.True,
-            NullObject o => RuntimeConstants.True,
-            _ => RuntimeConstants.False,
-        };
-
+        
+        // !<expression>
+        IRuntimeObject EvaluateBangOperatorExpression(IRuntimeObject? r) => BooleanNativeAsObject(!IsTruthy(r));
+    
+        // -<integer expression>
         IRuntimeObject EvaluateMinusOperatorExpression(IRuntimeObject? r) => r switch
         {
             IntegerObject i => new IntegerObject(-i.Value),
-            _ => RuntimeConstants.Null,
+            _ => Error($"unknown operator: -{r?.Type}"),
         };
     }
 
@@ -153,10 +167,8 @@ public static class Evaluator
         {
             result = Evaluate(statement);
 
-            if (result is ReturnValueObject retObj)
-            {
-                return retObj.Value;
-            }
+            if (result is ReturnValueObject ret) { return ret.Value; }
+            if (result is RuntimeErrorObject err) { return err; }
         }
         return result;
     }

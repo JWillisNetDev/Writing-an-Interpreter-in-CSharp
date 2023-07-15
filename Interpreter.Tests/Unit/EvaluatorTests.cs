@@ -10,6 +10,7 @@ public class EvaluatorTests
         var actual = TestEval(input);
         Assert.NotNull(actual);
         Assert.NotSame(actual, Evaluator.RuntimeConstants.Null);
+        AssertCheckError(actual);
         AssertCheckIntegerObject(actual, expected);
     }
 
@@ -21,6 +22,7 @@ public class EvaluatorTests
         var actual = TestEval(input);
         Assert.NotNull(actual);
         Assert.NotSame(actual, Evaluator.RuntimeConstants.Null);
+        AssertCheckError(actual);
         AssertCheckIntegerObject(actual, expected);
     }
 
@@ -41,6 +43,7 @@ public class EvaluatorTests
         var actual = TestEval(input);
         Assert.NotNull(actual);
         Assert.NotSame(actual, Evaluator.RuntimeConstants.Null);
+        AssertCheckError(actual);
         AssertCheckIntegerObject(actual, expected);
     }
 
@@ -52,6 +55,7 @@ public class EvaluatorTests
         var actual = TestEval(input);
         Assert.NotNull(actual);
         Assert.NotSame(actual, Evaluator.RuntimeConstants.Null);
+        AssertCheckError(actual);
         AssertCheckBooleanObject(actual, expected);
     }
 
@@ -67,6 +71,7 @@ public class EvaluatorTests
         var actual = TestEval(input);
         Assert.NotNull(actual);
         Assert.NotSame(actual, Evaluator.RuntimeConstants.Null);
+        AssertCheckError(actual);
         AssertCheckBooleanObject(actual, expected);
     }
 
@@ -85,6 +90,7 @@ public class EvaluatorTests
         var actual = TestEval(input);
         Assert.NotNull(actual);
         Assert.NotSame(actual, Evaluator.RuntimeConstants.Null);
+        AssertCheckError(actual);
         AssertCheckBooleanObject(actual, expected);
     }
     
@@ -102,6 +108,7 @@ public class EvaluatorTests
         var actual = TestEval(input);
         Assert.NotNull(actual);
         Assert.NotSame(actual, Evaluator.RuntimeConstants.Null);
+        AssertCheckError(actual);
         AssertCheckBooleanObject(actual, expected);
     }
 
@@ -115,6 +122,7 @@ public class EvaluatorTests
     {
         var evaluated = TestEval(input);
         Assert.NotNull(evaluated);
+        AssertCheckError(evaluated);
         if (expected.HasValue)
         {
             Assert.NotSame(Evaluator.RuntimeConstants.Null, evaluated);
@@ -134,6 +142,7 @@ public class EvaluatorTests
     {
         var evaluated = TestEval(input);
         Assert.NotNull(evaluated);
+        AssertCheckError(evaluated);
         if (expected.HasValue)
         {
             Assert.NotSame(Evaluator.RuntimeConstants.Null, evaluated);
@@ -155,6 +164,7 @@ public class EvaluatorTests
         var actual = TestEval(input);
         Assert.NotNull(actual);
         Assert.NotSame(Evaluator.RuntimeConstants.Null, actual);
+        AssertCheckError(actual);
         AssertCheckIntegerObject(actual, expected);
     }
 
@@ -173,9 +183,31 @@ public class EvaluatorTests
         var actual = TestEval(input);
         Assert.NotNull(actual);
         Assert.NotSame(Evaluator.RuntimeConstants.Null, actual);
+        AssertCheckError(actual);
         AssertCheckIntegerObject(actual, expected);
     }
-    
+
+    [Theory]
+    [InlineData("5 + true;", $"type mismatch: IntegerObject + BooleanObject")]
+    [InlineData("5 + true; 5;", "type mismatch: IntegerObject + BooleanObject")]
+    [InlineData("-true", "unknown operator: -BooleanObject")]
+    [InlineData("true + false;", "unknown operator: BooleanObject + BooleanObject")]
+    [InlineData("5; true + false; 5", "unknown operator: BooleanObject + BooleanObject")]
+    [InlineData("if (10 > 1) { true + false; }", "unknown operator: BooleanObject + BooleanObject")]
+    [InlineData("""
+        if (10 > 1) {
+            if (10 > 1) { return true + false; }
+            return 1;
+        }
+        """, "unknown operator: BooleanObject + BooleanObject")]
+    public void Evaluate_ErrorHandling_CreatesExpectedErrorMessages(string input, string expected)
+    {
+        var actual = TestEval(input);
+        var errorObject = Assert.IsType<RuntimeErrorObject>(actual);
+        Assert.NotNull(errorObject.Message);
+        Assert.NotEmpty(errorObject.Message);
+        Assert.Equal(expected, errorObject.Message);
+    }
     
     private static IRuntimeObject? TestEval(string input)
     {
@@ -184,6 +216,14 @@ public class EvaluatorTests
         var program = parser.ParseProgram();
         var evaluated = Evaluator.Evaluate(program);
         return evaluated;
+    }
+
+    private static void AssertCheckError(IRuntimeObject obj)
+    {
+        if (obj is RuntimeErrorObject error)
+        {
+            Assert.Fail(error.Message ?? "No error message.");
+        }
     }
     
     private NullObject AssertCheckNullObject(IRuntimeObject evaluated)
