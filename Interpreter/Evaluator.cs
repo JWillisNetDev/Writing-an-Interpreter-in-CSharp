@@ -70,6 +70,12 @@ public static class Evaluator
             case IfExpression ifExpr:
                 return EvaluateIfExpression(ifExpr, env);
             
+            case IndexExpression indexExpr:
+                left = Evaluate(indexExpr.Left, env);
+                if (IsError(left)) { return left; }
+                var index = Evaluate(indexExpr.Index, env);
+                return IsError(index) ? index : EvaluateIndexExpression(left, index);
+
             case CallExpression call:
                 var function = Evaluate(call.Function, env);
                 if (IsError(function)) { return function; }
@@ -86,6 +92,22 @@ public static class Evaluator
 
         return RuntimeConstants.Null;
     }
+    
+    private static IRuntimeObject EvaluateIndexExpression(IRuntimeObject left, IRuntimeObject index)
+    {
+        if (left is ArrayObject leftObj && index is IntegerObject indexObj)
+        {
+            return EvaluateArrayIndexExpression(leftObj, indexObj);
+        }
+        return Error($"index operator not supported: {left.Type}");
+    }
+    
+    private static IRuntimeObject EvaluateArrayIndexExpression(ArrayObject left, IntegerObject index)
+    {
+        if (index.Value >= 0 && index.Value < left.Elements.Count) { return left.Elements[(int)index.Value]; } // This cast is evil.
+        return RuntimeConstants.Null;
+    }
+
     private static IRuntimeObject BindFunction(IRuntimeObject function, IRuntimeObject[] arguments)
     {
         if (function is FunctionObject functionObject)
@@ -114,6 +136,7 @@ public static class Evaluator
             return obj;
         }
     }
+    
     private static List<IRuntimeObject> EvaluateExpressions(IReadOnlyList<IExpression> expressions, Environment env)
     {
         List<IRuntimeObject> evaluated = new();

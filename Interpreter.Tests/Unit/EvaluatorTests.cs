@@ -327,6 +327,40 @@ public class EvaluatorTests
         AssertCheckIntegerObject(array.Elements[1], 4);
         AssertCheckIntegerObject(array.Elements[2], 6);
     }
+
+    [Theory]
+    [InlineData("[1, 2, 3][0]", 1L)]
+    [InlineData("[1, 2, 3][1]", 2L)]
+    [InlineData("[1, 2, 3][2]", 3L)]
+    [InlineData("let i = 0; [1][i];", 1L)]
+    [InlineData("[1, 2, 3][1 + 1];", 3L)]
+    [InlineData("let myArray = [1, 2, 3]; myArray[2];", 3L)]
+    [InlineData("let myArray = [1, 2, 3]; myArray[0] + myArray[1] + myArray[2];", 6L)]
+    [InlineData("let myArray = [1, 2, 3]; let i = myArray[0]; myArray[i];", 2L)]
+    [InlineData("[1, 2, 3][3]", null)]
+    [InlineData("[1, 2, 3][-1]", null)]
+    public void Evaluate_ArrayIndexExpressions_EvaluatesCorrectIndex<T>(string input, T expected)
+    {
+        var evaluated = TestEval(input);
+        Assert.NotNull(evaluated);
+        switch (expected)
+        {
+            case long l:
+                AssertCheckIntegerObject(evaluated, l);
+                break;
+            case string str:
+                AssertCheckStringObject(evaluated, str);
+                break;
+            case bool b:
+                AssertCheckBooleanObject(evaluated, b);
+                break;
+            case null:
+                AssertCheckNullObject(evaluated);
+                break;
+            default:
+                throw new NotImplementedException($"Not implemented: {typeof(T)}");
+        }
+    }
     
     private void AssertCheckErrorMessage(IRuntimeObject actual, string expected)
     {
