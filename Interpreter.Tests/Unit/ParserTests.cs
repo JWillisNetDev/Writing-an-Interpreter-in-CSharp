@@ -218,6 +218,8 @@ public class ParserTests
     [InlineData("a + add(b * c) + d", "((a + add((b * c))) + d)")]
     [InlineData("add(a, b, 1, 2 * 3, 4 + 5, add(6, 7 * 8))", "add(a, b, 1, (2 * 3), (4 + 5), add(6, (7 * 8)))")]
     [InlineData("add(a + b + c * d / f + g)", "add((((a + b) + ((c * d) / f)) + g))")]
+    [InlineData("a * [1, 2, 3, 4][b * c] * d",  "((a * ([1, 2, 3, 4][(b * c)])) * d)")]
+    [InlineData("add(a * b[2], b[1], 2 * [1, 2][1])", "add((a * (b[2])), (b[1]), (2 * ([1, 2][1])))")]
     public void ParseProgram_OperationalOrder_OperationsParseInCorrectOrder(string input, string expected)
         // I hate this test and I /HATE/ overriding tostring on records
         // and I have an absolute seething hatred for using strings to provide testing for what can be better expressed using some more practical logical forms
@@ -424,6 +426,23 @@ public class ParserTests
         AssertCheckLiteralExpression(array.Elements[0], 1);
         AssertCheckInfixExpression(array.Elements[1], 2, "*", 2);
         AssertCheckInfixExpression(array.Elements[2], 3, "+", 3);
+    }
+
+    [Fact]
+    public void ParseProgram_IndexExpressions_ParsesIndexExpressions()
+    {
+        const string input = "myArray[1 + 1]";
+        Lexer lexer = new(input);
+        Parser parser = new(lexer);
+
+        Program actual = parser.ParseProgram();
+
+        AssertCheckParserErrors(parser);
+
+        var expression = Assert.IsType<ExpressionStatement>(Assert.Single(actual.Statements)).Expression;
+        var index = Assert.IsType<IndexExpression>(expression);
+        AssertCheckIdentifier(index.Left, "myArray");
+        AssertCheckInfixExpression(index.Index, 1, "+", 1);
     }
 
     private void AssertCheckParserErrors(Parser parser)

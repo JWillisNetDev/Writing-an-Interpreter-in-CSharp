@@ -22,15 +22,16 @@ public class Parser
     // Public readonly static properties
     public static IReadOnlyDictionary<TokenType, Precedence> Precedences { get; } = new Dictionary<TokenType, Precedence>()
     {
-        { TokenType.Equals, Precedence.Equals },
-        { TokenType.NotEquals, Precedence.Equals },
-        { TokenType.LessThan, Precedence.LessGreater },
-        { TokenType.GreaterThan, Precedence.LessGreater },
-        { TokenType.Plus, Precedence.Sum },
-        { TokenType.Minus, Precedence.Sum },
-        { TokenType.Splat, Precedence.Product },
-        { TokenType.Slash, Precedence.Product },
-        { TokenType.OpenParen, Precedence.Call },
+        [TokenType.Equals] = Precedence.Equals,
+        [TokenType.NotEquals] = Precedence.Equals,
+        [TokenType.LessThan] = Precedence.LessGreater,
+        [TokenType.GreaterThan] = Precedence.LessGreater,
+        [TokenType.Plus] = Precedence.Sum,
+        [TokenType.Minus] = Precedence.Sum,
+        [TokenType.Splat] = Precedence.Product,
+        [TokenType.Slash] = Precedence.Product,
+        [TokenType.OpenParen] = Precedence.Call,
+        [TokenType.OpenSquareBracket] = Precedence.Index,
     };
 
     public Parser(Lexer lexer)
@@ -62,6 +63,7 @@ public class Parser
         RegisterInfix(TokenType.LessThan, ParseInfixExpression);
         RegisterInfix(TokenType.GreaterThan, ParseInfixExpression);
         RegisterInfix(TokenType.OpenParen, ParseCallExpression);
+        RegisterInfix(TokenType.OpenSquareBracket, ParseIndexExpression);
     }
 
     public Program ParseProgram()
@@ -79,6 +81,18 @@ public class Parser
         }
 
         return program;
+    }
+
+    private IndexExpression? ParseIndexExpression(IExpression left)
+    {
+        var token = Current;
+
+        NextToken();
+        var index = ParseExpression(Precedence.Lowest);
+
+        return ExpectNext(TokenType.CloseSquareBracket) ?
+            new IndexExpression(token, left, index) :
+            null;
     }
 
     private ArrayLiteral ParseArrayLiteral()
