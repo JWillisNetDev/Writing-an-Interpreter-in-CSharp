@@ -8,4 +8,5 @@ public enum RuntimeObjectType
     IntegerObject,
     BooleanObject,
     ReturnObject,
+    FunctionObject,
 }

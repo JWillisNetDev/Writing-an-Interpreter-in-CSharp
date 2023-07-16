@@ -221,6 +221,48 @@ public class EvaluatorTests
         Assert.NotNull(actual);
         AssertCheckIntegerObject(actual, expected);
     }
+
+    [Fact]
+    public void Evaluate_FunctionLiteral_CreatesFunctionObject()
+    {
+        const string input = "fn(x) { x + 2; }";
+
+        var evaluated = TestEval(input);
+        var functionObject = Assert.IsType<FunctionObject>(evaluated);
+        var parameter = Assert.Single(functionObject.Parameters);
+        Assert.Equal("x", parameter.ToString());
+        Assert.Equal("(x + 2)", functionObject.Body.ToString());
+    }
+
+    [Theory]
+    [InlineData("let identity = fn(x) { x; }; identity(5);", 5L)]
+    [InlineData("let identity = fn(x) { return x; }; identity(5);", 5L)]
+    [InlineData("let double = fn(x) { x * 2; }; double(5)", 10L)]
+    [InlineData("let add = fn(x, y) { x + y; }; add(5, 5);", 10L)]
+    [InlineData("let add = fn(x, y) { x + y; }; add(5 + 5, add(5, 5));", 20L)]
+    [InlineData("fn(x) { x; }(5)", 5L)]
+    public void Evaluate_FunctionLiterals_CreatesFunctionObjectsWithIntegerLiteralValues(string input, long expected)
+    {
+        
+        var actual = TestEval(input);
+        Assert.NotNull(actual);
+        AssertCheckIntegerObject(actual, expected);
+    }
+
+    [Fact]
+    public void Evaluate_FunctionLiterals_CreatesProperClosures()
+    {
+        const string input = """
+            let newAdder = fn(x) {
+                fn(y) { x + y };
+            };
+            let addTwo = newAdder(2);
+            addTwo(2);
+            """;
+        var evaluated = TestEval(input);
+        Assert.NotNull(evaluated);
+        AssertCheckIntegerObject(evaluated, 4L);
+    }
     
     private static IRuntimeObject? TestEval(string input)
     {
@@ -240,7 +282,7 @@ public class EvaluatorTests
         }
     }
     
-    private NullObject AssertCheckNullObject(IRuntimeObject evaluated)
+    private static NullObject AssertCheckNullObject(IRuntimeObject evaluated)
     {
         var nullObj = Assert.IsType<NullObject>(evaluated);
         Assert.Same(Evaluator.RuntimeConstants.Null, evaluated);

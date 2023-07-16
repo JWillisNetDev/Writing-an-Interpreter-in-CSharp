@@ -1,4 +1,3 @@
-using System.Linq.Expressions;
 using Interpreter.Ast;
 using Interpreter.Objects;
 
@@ -45,6 +44,9 @@ public static class Evaluator
             case BooleanLiteral boolean:
                 return BooleanNativeAsObject(boolean.Value);
             
+            case FunctionLiteral func:
+                return new FunctionObject(func.Parameters, func.Body, env);
+                
             case PrefixExpression prefix:
                 right = Evaluate(prefix.Right, env);
                 return IsError(right) ? right : EvaluatePrefixExpression(prefix.Operator, right);
@@ -59,6 +61,15 @@ public static class Evaluator
             case IfExpression ifExpr:
                 return EvaluateIfExpression(ifExpr, env);
             
+            case CallExpression call:
+                var function = Evaluate(call.Function, env);
+                if (IsError(function)) { return function; }
+                
+                var args = EvaluateExpressions(call.Arguments, env).ToList();
+                if (IsError(args.LastOrDefault())) { return args.Last(); }
+
+                return BindFunction(function, args);
+
             // Identifiers
             case Identifier identifier:
                 return EvaluateIdentifier(identifier, env);
@@ -66,6 +77,43 @@ public static class Evaluator
 
         return RuntimeConstants.Null;
     }
+    private static IRuntimeObject BindFunction(IRuntimeObject function, IReadOnlyList<IRuntimeObject> arguments)
+    {
+        if (function is FunctionObject functionObject)
+        {
+            Environment extended = ExtendFunctionEnvironment(functionObject, arguments);
+            var evaluated = Evaluate(functionObject.Body, extended);
+            return UnwrapReturnValue(evaluated);
+        }
+        return Error($"not a function: {function.Type}");
+        
+        Environment ExtendFunctionEnvironment(FunctionObject fn, IReadOnlyList<IRuntimeObject> args)
+        {
+            Environment env = new(fn.Environment);
+            for (int i = 0; i < fn.Parameters.Count; i++)
+            {
+                env.Set(fn.Parameters[i].Value, args[i]);
+            }
+            
+            return env;
+        }
+        
+        IRuntimeObject UnwrapReturnValue(IRuntimeObject obj)
+        {
+            if (obj is ReturnValueObject retObj) { return retObj.Value; }
+            return obj;
+        }
+    }
+    private static IEnumerable<IRuntimeObject> EvaluateExpressions(ImmutableArray<IExpression> expressions, Environment env)
+    {
+        foreach (var expression in expressions)
+        {
+            IRuntimeObject evaluated = Evaluate(expression, env);
+            yield return evaluated;
+            if (IsError(evaluated)) { break; }
+        }
+    }
+    
     private static IRuntimeObject EvaluateIdentifier(Identifier identifier, Environment env)
         => env.TryGet(identifier.Value, out var obj) ? obj : Error($"identifier not found: {identifier.Value}");
 
