@@ -316,7 +316,7 @@ public class ParserTests
         var expression = Assert.IsType<ExpressionStatement>(statement).Expression;
         
         var functionLiteral = Assert.IsType<FunctionLiteral>(expression);
-        Assert.Equal(2, functionLiteral.Parameters.Length);
+        Assert.Equal(2, functionLiteral.Parameters.Count);
         AssertCheckLiteralExpression(functionLiteral.Parameters[0], "x");
         AssertCheckLiteralExpression(functionLiteral.Parameters[1], "y");
 
@@ -343,7 +343,7 @@ public class ParserTests
         var expression = Assert.IsType<ExpressionStatement>(statement).Expression;
         
         var functionLiteral = Assert.IsType<FunctionLiteral>(expression);
-        Assert.Equal(expectedParams.Length, functionLiteral.Parameters.Length);
+        Assert.Equal(expectedParams.Length, functionLiteral.Parameters.Count);
         Assert.Equivalent(expectedParams, functionLiteral.Parameters.Select(p => p.Value));
     }
 
@@ -364,7 +364,7 @@ public class ParserTests
         var callExpression = Assert.IsType<CallExpression>(expression);
         AssertCheckIdentifier(callExpression.Function, "add");
 
-        Assert.Equal(3, callExpression.Arguments.Length);
+        Assert.Equal(3, callExpression.Arguments.Count);
         AssertCheckLiteralExpression(callExpression.Arguments[0], 1);
         AssertCheckInfixExpression(callExpression.Arguments[1], 2, "*", 3);
         AssertCheckInfixExpression(callExpression.Arguments[2], 4, "+", 5);
@@ -390,7 +390,7 @@ public class ParserTests
         var callExpression = Assert.IsType<CallExpression>(expression);
         AssertCheckIdentifier(callExpression.Function, function);
 
-        Assert.Equal(arguments.Length, callExpression.Arguments.Length);
+        Assert.Equal(arguments.Length, callExpression.Arguments.Count);
         Assert.Equivalent(arguments, callExpression.Arguments.Select(a => a.TokenLiteral));
     }
 

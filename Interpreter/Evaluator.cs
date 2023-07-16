@@ -38,6 +38,12 @@ public static class Evaluator
                 return value;
 
             // Expressions
+            case ArrayLiteral array:
+                var elements = EvaluateExpressions(array.Elements, env);
+                if (elements.LastOrDefault() is { } last 
+                    && IsError(last)) { return last; }
+                return new ArrayObject(elements);
+            
             case IntegerLiteral integer:
                 return new IntegerObject(integer.Value);
             
@@ -108,14 +114,16 @@ public static class Evaluator
             return obj;
         }
     }
-    private static IEnumerable<IRuntimeObject> EvaluateExpressions(ImmutableArray<IExpression> expressions, Environment env)
+    private static List<IRuntimeObject> EvaluateExpressions(IReadOnlyList<IExpression> expressions, Environment env)
     {
+        List<IRuntimeObject> evaluated = new();
         foreach (var expression in expressions)
         {
-            IRuntimeObject evaluated = Evaluate(expression, env);
-            yield return evaluated;
-            if (IsError(evaluated)) { break; }
+            var eval = Evaluate(expression, env);
+            evaluated.Add(eval);
+            if (IsError(eval)) { return evaluated; }
         }
+        return evaluated;
     }
 
     private static IRuntimeObject EvaluateIdentifier(Identifier identifier, Environment env)

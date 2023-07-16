@@ -314,6 +314,19 @@ public class EvaluatorTests
         Assert.NotNull(evaluated);
         AssertCheckErrorMessage(evaluated, expectedError);
     }
+
+    [Fact]
+    public void Evaluate_ArrayLiterals_EvaluatesArrayLiteral()
+    {
+        const string input = "[1, 2 * 2, 3 + 3]";
+        var evaluated = TestEval(input);
+        Assert.NotNull(evaluated);
+        var array = Assert.IsType<ArrayObject>(evaluated);
+        Assert.Equal(3, array.Elements.Count);
+        AssertCheckIntegerObject(array.Elements[0], 1);
+        AssertCheckIntegerObject(array.Elements[1], 4);
+        AssertCheckIntegerObject(array.Elements[2], 6);
+    }
     
     private void AssertCheckErrorMessage(IRuntimeObject actual, string expected)
     {

@@ -2,14 +2,14 @@ namespace Interpreter.Ast;
 
 // fn(x, y) { x + y; }(2, 3)
 // <expression>(<comma separated expressions>)
-public record CallExpression(Token Token, IExpression Function, ImmutableArray<IExpression> Arguments) : IExpression
+public record CallExpression(Token Token, IExpression Function, IReadOnlyList<IExpression> Arguments) : IExpression
 {
-    public CallExpression(Token token, IExpression function, IEnumerable<IExpression> arguments) : this(token, function, arguments.ToImmutableArray())
+    public CallExpression(Token token, IExpression function, IEnumerable<IExpression> arguments) : this(token, function, arguments.ToList().AsReadOnly())
     {}
     
     public Token Token { get; } = Token ?? throw new ArgumentNullException(nameof(Token));
     public IExpression Function { get; } = Function ?? throw new ArgumentNullException(nameof(Function));
-    public ImmutableArray<IExpression> Arguments { get; } = Arguments;
+    public IReadOnlyList<IExpression> Arguments { get; } = Arguments;
 
     public string TokenLiteral => Token.Literal;
     public void ExpressionNode()
