@@ -324,7 +324,7 @@ public class EvaluatorTests
     private static IRuntimeObject? TestEval(string input)
     {
         Lexer lexer = new(input);
-        Parser parser = new(lexer);
+        Parser parser = new(lexer); 
         Environment env = new();
         var program = parser.ParseProgram();
         var evaluated = Evaluator.Evaluate(program, env);
