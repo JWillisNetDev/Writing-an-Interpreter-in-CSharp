@@ -1,12 +1,12 @@
 namespace Interpreter.Ast;
 
-public record BlockStatement(Token Token, ImmutableArray<IStatement> Statements) : IStatement
+public record BlockStatement(Token Token, IReadOnlyList<IStatement> Statements) : IStatement
 {
-    public BlockStatement(Token token, IEnumerable<IStatement> statements) : this(token, statements.ToImmutableArray())
+    public BlockStatement(Token token, IEnumerable<IStatement> statements) : this(token, statements.ToList().AsReadOnly())
     {}
     
     public Token Token { get; } = Token ?? throw new ArgumentNullException(nameof(Token));
-    public ImmutableArray<IStatement> Statements { get; } = Statements;
+    public IReadOnlyList<IStatement> Statements { get; } = Statements ?? throw new ArgumentNullException(nameof(Statements));
 
     public string TokenLiteral => Token.Literal;
     public void StatementNode()
