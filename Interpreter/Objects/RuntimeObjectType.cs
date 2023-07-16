@@ -9,4 +9,5 @@ public enum RuntimeObjectType
     BooleanObject,
     ReturnObject,
     FunctionObject,
+    StringObject,
 }

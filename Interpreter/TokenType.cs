@@ -5,7 +5,7 @@ public enum TokenType
     Illegal, EndOfFile,
     
     // Identifiers and Literals
-    Identifier, Int,
+    Identifier, Int, String,
     
     // Operators
     Assign, Plus,
