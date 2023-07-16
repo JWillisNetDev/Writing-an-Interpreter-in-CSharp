@@ -285,6 +285,17 @@ public class EvaluatorTests
         AssertCheckString(evaluated, expected);
     }
 
+    [Theory]
+    [InlineData(@"""Test"" + 123", "Test123")]
+    [InlineData(@"""1"" + 2 + ""3""", "123")]
+    [InlineData(@"""1"" + 2 + 3", "123")]
+    public void Evaluate_StringLiteralConcatenationWithIntegers_ConcatenatesStringsAndIntegers(string input, string expected)
+    {
+        var evaluated = TestEval(input);
+        Assert.NotNull(evaluated);
+        AssertCheckString(evaluated, expected);
+    }
+    
     private static IRuntimeObject? TestEval(string input)
     {
         Lexer lexer = new(input);
