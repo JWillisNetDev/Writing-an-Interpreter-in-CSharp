@@ -10,4 +10,5 @@ public enum RuntimeObjectType
     ReturnObject,
     FunctionObject,
     StringObject,
+    Builtin,
 }

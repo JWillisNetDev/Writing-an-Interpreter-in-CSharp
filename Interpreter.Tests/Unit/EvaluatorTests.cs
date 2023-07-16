@@ -204,10 +204,8 @@ public class EvaluatorTests
     public void Evaluate_ErrorHandling_CreatesExpectedErrorMessages(string input, string expected)
     {
         var actual = TestEval(input);
-        var errorObject = Assert.IsType<RuntimeErrorObject>(actual);
-        Assert.NotNull(errorObject.Message);
-        Assert.NotEmpty(errorObject.Message);
-        Assert.Equal(expected, errorObject.Message);
+        Assert.NotNull(actual);
+        AssertCheckErrorMessage(actual, expected);
     }
 
     [Theory]
@@ -271,7 +269,7 @@ public class EvaluatorTests
     {
         var evaluated = TestEval(input);
         Assert.NotNull(evaluated);
-        AssertCheckString(evaluated, expected);
+        AssertCheckStringObject(evaluated, expected);
     }
 
     [Theory]
@@ -282,7 +280,7 @@ public class EvaluatorTests
     {
         var evaluated = TestEval(input);
         Assert.NotNull(evaluated);
-        AssertCheckString(evaluated, expected);
+        AssertCheckStringObject(evaluated, expected);
     }
 
     [Theory]
@@ -293,7 +291,34 @@ public class EvaluatorTests
     {
         var evaluated = TestEval(input);
         Assert.NotNull(evaluated);
-        AssertCheckString(evaluated, expected);
+        AssertCheckStringObject(evaluated, expected);
+    }
+
+    [Theory]
+    [InlineData(@"len("""")", 0L)]
+    [InlineData(@"len(""four"")", 4L)]
+    [InlineData(@"len(""hello world"")", 11L)]
+    public void Evaluate_BuiltinFunctionLen_Lengths(string input, long expectedLength)
+    {
+        var evaluated = TestEval(input);
+        Assert.NotNull(evaluated);
+        AssertCheckIntegerObject(evaluated, expectedLength);
+    }
+
+    [Theory]
+    [InlineData(@"len(1)", "argument to `len` not supported, got IntegerObject")]
+    [InlineData(@"len(""one"", ""two"")", "wrong number of arguments. got=2, wanted=1")]
+    public void Evaluate_BuiltinFunctionLenErrors_Errors(string input, string expectedError)
+    {
+        var evaluated = TestEval(input);
+        Assert.NotNull(evaluated);
+        AssertCheckErrorMessage(evaluated, expectedError);
+    }
+    
+    private void AssertCheckErrorMessage(IRuntimeObject actual, string expected)
+    {
+        var message = Assert.IsType<RuntimeErrorObject>(actual).Message;
+        Assert.Equal(expected, message);
     }
     
     private static IRuntimeObject? TestEval(string input)
@@ -306,7 +331,7 @@ public class EvaluatorTests
         return evaluated;
     }
 
-    private static StringObject AssertCheckString(IRuntimeObject obj, string expectedValue)
+    private static StringObject AssertCheckStringObject(IRuntimeObject obj, string expectedValue)
     {
         var strObj = Assert.IsType<StringObject>(obj);
         Assert.Equal(expectedValue, strObj.Value);
