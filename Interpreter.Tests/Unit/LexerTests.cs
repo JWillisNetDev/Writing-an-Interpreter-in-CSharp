@@ -451,4 +451,27 @@ public class LexerTests
             _output.WriteLine(actual.ToString());
         }
     }
+
+    [Fact]
+    public void MoveNextToken_GivenStringLiterals_StringLiteralTokens()
+    {
+        const string input = """
+            "foobar"
+            "foo bar"
+            """;
+        List<Token> expected = new()
+        {
+            new(TokenType.String, "foobar"),
+            new Token(TokenType.String, "foo bar"),
+            new Token(TokenType.EndOfFile, "\0"),
+        };
+
+        Lexer lexer = new(input);
+        foreach (var token in expected)
+        {
+            var actual = lexer.MoveNext();
+            Assert.Equal(token, actual);
+            _output.WriteLine(actual.ToString());
+        }
+    }
 }

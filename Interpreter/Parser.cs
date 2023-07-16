@@ -49,6 +49,7 @@ public class Parser
         RegisterPrefix(TokenType.OpenParen, ParseGroupedExpression!); // TODO null
         RegisterPrefix(TokenType.If, ParseIfExpression!);
         RegisterPrefix(TokenType.Function, ParseFunctionLiteral!);
+        RegisterPrefix(TokenType.String, ParseStringLiteral!);
         
         // Register infixers
         RegisterInfix(TokenType.Plus, ParseInfixExpression);
@@ -61,7 +62,7 @@ public class Parser
         RegisterInfix(TokenType.GreaterThan, ParseInfixExpression);
         RegisterInfix(TokenType.OpenParen, ParseCallExpression);
     }
-
+    
     public Program ParseProgram()
     {
         Program program = new();
@@ -78,7 +79,9 @@ public class Parser
 
         return program;
     }
-    
+
+    private StringLiteral ParseStringLiteral() => new StringLiteral(Current, Current.Literal);
+
     private CallExpression ParseCallExpression(IExpression function)
     {
         var token = Current;

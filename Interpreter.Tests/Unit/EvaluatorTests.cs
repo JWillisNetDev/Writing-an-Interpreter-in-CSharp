@@ -263,7 +263,28 @@ public class EvaluatorTests
         Assert.NotNull(evaluated);
         AssertCheckIntegerObject(evaluated, 4L);
     }
-    
+
+    [Theory]
+    [InlineData(@"""Hello World!""", "Hello World!")]
+    [InlineData(@"let a = ""This is a test!"";", "This is a test!")]
+    public void Evaluate_StringLiteral_CreatesStringRuntimeObjects(string input, string expected)
+    {
+        var evaluated = TestEval(input);
+        Assert.NotNull(evaluated);
+        AssertCheckString(evaluated, expected);
+    }
+
+    [Theory]
+    [InlineData(@"""Hello, "" + ""world!""", "Hello, world!")]
+    [InlineData(@"""this"" + "" and "" + ""that""", "this and that")]
+    [InlineData(@"""one"" + "", two"" + "", three""", "one, two, three")]
+    public void Evaluate_StringLiteralConcatenation_ConcatenatesStrings(string input, string expected)
+    {
+        var evaluated = TestEval(input);
+        Assert.NotNull(evaluated);
+        AssertCheckString(evaluated, expected);
+    }
+
     private static IRuntimeObject? TestEval(string input)
     {
         Lexer lexer = new(input);
@@ -274,6 +295,13 @@ public class EvaluatorTests
         return evaluated;
     }
 
+    private static StringObject AssertCheckString(IRuntimeObject obj, string expectedValue)
+    {
+        var strObj = Assert.IsType<StringObject>(obj);
+        Assert.Equal(expectedValue, strObj.Value);
+        return strObj;
+    }
+    
     private static void AssertCheckError(IRuntimeObject obj)
     {
         if (obj is RuntimeErrorObject error)

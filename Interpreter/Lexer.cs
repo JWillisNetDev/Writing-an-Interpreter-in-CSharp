@@ -65,7 +65,7 @@ public class Lexer
         switch (_current) 
         {
             case '\0':
-                token = new Token(TokenType.EndOfFile, literal);
+                token = new Token(TokenType.EndOfFile, '\0');
                 break;
             case '=':
                 if (PeekChar() == '=')
@@ -121,6 +121,10 @@ public class Lexer
             case '<':
                 token = new Token(TokenType.LessThan ,literal);
                 break;
+            case '"':
+                literal = ReadString();
+                token = new Token(TokenType.String, literal);
+                break;
             default:
                 token = new Token(TokenType.Illegal, _current);
                 break;
@@ -128,6 +132,15 @@ public class Lexer
         ReadChar();
 
         return token;
+    }
+    
+    private string ReadString()
+    {
+        var position = _position + 1;
+        
+        ReadChar();
+        while (_current is not ('"' or '\0')) { ReadChar(); }
+        return Input[position.._position];
     }
 
     private Token ScanNumber()

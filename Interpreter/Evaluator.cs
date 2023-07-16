@@ -46,6 +46,9 @@ public static class Evaluator
             
             case FunctionLiteral func:
                 return new FunctionObject(func.Parameters, func.Body, env);
+            
+            case StringLiteral str:
+                return new StringObject(str.Value);
                 
             case PrefixExpression prefix:
                 right = Evaluate(prefix.Right, env);
@@ -138,6 +141,9 @@ public static class Evaluator
 
     private static RuntimeErrorObject Error(string message) => new(message);
 
+    private static RuntimeErrorObject UnknownInfixOperatorError(string infixOperator, IRuntimeObject left, IRuntimeObject right)
+        => Error($"unknown operator: {left.Type} {infixOperator} {right.Type}");
+
     private static bool IsError(IRuntimeObject? obj) => obj is { Type: RuntimeObjectType.ErrorObject };
     
     private static bool IsTruthy(IRuntimeObject? obj) => obj switch
@@ -161,11 +167,16 @@ public static class Evaluator
 
     private static IRuntimeObject EvaluateInfixExpression(string infixOperator, IRuntimeObject? left, IRuntimeObject? right)
     {
+        if (infixOperator == "+" && left is StringObject l) // Departure from Monkey, strings only can concat on strings in typical Monkey
+        {
+            return EvaluateStringConcat(l, right);
+        }
+        
         if (left?.Type != right?.Type)
         {
             return Error($"type mismatch: {left.Type} {infixOperator} {right.Type}");
         }
-        
+
         if (left is IntegerObject lhs
             && right is IntegerObject rhs)
         {
@@ -184,6 +195,14 @@ public static class Evaluator
 
         return Error($"unknown operator: {left?.Type} {infixOperator} {right?.Type}");
 
+        IRuntimeObject EvaluateStringConcat(StringObject str, IRuntimeObject r) => r switch
+        {
+            IntegerObject i => new StringObject(str.Value + i.Value),
+            BooleanObject b => new StringObject(str.Value + (b.Value ? "1" : "0")),
+            StringObject s => new StringObject(str.Value + s.Value),
+            _ => UnknownInfixOperatorError(infixOperator, str, r),
+        };
+        
         IRuntimeObject EvaluateIntegerInfixExpression(string op, long lhsValue, long rhsValue) => op switch
         {
             "+" => new IntegerObject(lhsValue + rhsValue),
@@ -194,7 +213,7 @@ public static class Evaluator
             ">" => BooleanNativeAsObject(lhsValue > rhsValue),
             "==" => BooleanNativeAsObject(lhsValue == rhsValue),
             "!=" => BooleanNativeAsObject(lhsValue != rhsValue),
-            _ => Error($"unknown operator: {left.Type} {infixOperator} {right.Type}"),
+            _ => UnknownInfixOperatorError(infixOperator, left, right),
         };
     }
 

@@ -1,3 +1,4 @@
+using System.Net.Security;
 using Xunit.Abstractions;
 
 namespace Interpreter.Tests.Unit;
@@ -389,6 +390,21 @@ public class ParserTests
 
         Assert.Equal(arguments.Length, callExpression.Arguments.Length);
         Assert.Equivalent(arguments, callExpression.Arguments.Select(a => a.TokenLiteral));
+    }
+
+    [Theory]
+    [InlineData(@"""Hello, world!""", "Hello, world!")]
+    public void ParseProgram_StringLiterals_ParsesStringLiteral(string input, string expected)
+    {
+        Lexer lexer = new(input);
+        Parser parser = new(lexer);
+
+        Program program = parser.ParseProgram();
+        AssertCheckParserErrors(parser);
+
+        var expression = Assert.IsType<ExpressionStatement>(Assert.Single(program.Statements)).Expression;
+        var literal = Assert.IsType<StringLiteral>(expression);
+        Assert.Equal(expected, literal.Value);
     }
 
     private void AssertCheckParserErrors(Parser parser)
