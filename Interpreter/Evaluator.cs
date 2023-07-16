@@ -68,7 +68,7 @@ public static class Evaluator
                 var function = Evaluate(call.Function, env);
                 if (IsError(function)) { return function; }
                 
-                var args = EvaluateExpressions(call.Arguments, env).ToList();
+                var args = EvaluateExpressions(call.Arguments, env).ToArray();
                 if (IsError(args.LastOrDefault())) { return args.Last(); }
 
                 return BindFunction(function, args);
@@ -80,7 +80,7 @@ public static class Evaluator
 
         return RuntimeConstants.Null;
     }
-    private static IRuntimeObject BindFunction(IRuntimeObject function, IReadOnlyList<IRuntimeObject> arguments)
+    private static IRuntimeObject BindFunction(IRuntimeObject function, IRuntimeObject[] arguments)
     {
         if (function is FunctionObject functionObject)
         {
@@ -88,6 +88,7 @@ public static class Evaluator
             var evaluated = Evaluate(functionObject.Body, extended);
             return UnwrapReturnValue(evaluated);
         }
+        if (function is BuiltinObject builtin) { return builtin.Function(arguments); }
         return Error($"not a function: {function.Type}");
         
         Environment ExtendFunctionEnvironment(FunctionObject fn, IReadOnlyList<IRuntimeObject> args)
@@ -116,10 +117,20 @@ public static class Evaluator
             if (IsError(evaluated)) { break; }
         }
     }
-    
-    private static IRuntimeObject EvaluateIdentifier(Identifier identifier, Environment env)
-        => env.TryGet(identifier.Value, out var obj) ? obj : Error($"identifier not found: {identifier.Value}");
 
+    private static IRuntimeObject EvaluateIdentifier(Identifier identifier, Environment env)
+    {
+        if (env.TryGet(identifier.Value, out var runtimeVar))
+        {
+            return runtimeVar;
+        }
+        if (Builtins.TryGet(identifier.Value, out var builtin))
+        {
+            return builtin;
+        }
+        return Error($"identifier not found: {identifier.Value}");
+    }
+    
     private static IRuntimeObject EvaluateIfExpression(IfExpression ifExpr, Environment env)
     {
         var condition = Evaluate(ifExpr.Condition, env);
