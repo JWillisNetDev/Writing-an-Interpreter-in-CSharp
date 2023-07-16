@@ -407,6 +407,25 @@ public class ParserTests
         Assert.Equal(expected, literal.Value);
     }
 
+    [Fact]
+    public void ParseProgram_ArrayLiterals_ParsesArrayElements()
+    {
+        const string input = "[1, 2 * 2, 3 + 3]";
+        Lexer lexer = new(input);
+        Parser parser = new(lexer);
+
+        Program actual = parser.ParseProgram();
+
+        AssertCheckParserErrors(parser);
+
+        var expression = Assert.IsType<ExpressionStatement>(Assert.Single(actual.Statements)).Expression;
+        var array = Assert.IsType<ArrayLiteral>(expression);
+        Assert.Equal(3, array.Elements.Count);
+        AssertCheckLiteralExpression(array.Elements[0], 1);
+        AssertCheckInfixExpression(array.Elements[1], 2, "*", 2);
+        AssertCheckInfixExpression(array.Elements[2], 3, "+", 3);
+    }
+
     private void AssertCheckParserErrors(Parser parser)
     {
         foreach (string error in parser.Errors) { _output.WriteLine(error); }

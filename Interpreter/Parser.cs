@@ -50,6 +50,7 @@ public class Parser
         RegisterPrefix(TokenType.If, ParseIfExpression!);
         RegisterPrefix(TokenType.Function, ParseFunctionLiteral!);
         RegisterPrefix(TokenType.String, ParseStringLiteral!);
+        RegisterPrefix(TokenType.OpenSquareBracket, ParseArrayLiteral);
         
         // Register infixers
         RegisterInfix(TokenType.Plus, ParseInfixExpression);
@@ -62,7 +63,7 @@ public class Parser
         RegisterInfix(TokenType.GreaterThan, ParseInfixExpression);
         RegisterInfix(TokenType.OpenParen, ParseCallExpression);
     }
-    
+
     public Program ParseProgram()
     {
         Program program = new();
@@ -80,36 +81,41 @@ public class Parser
         return program;
     }
 
+    private ArrayLiteral ParseArrayLiteral()
+    {
+        var token = Current;
+        var elements = ParseExpressionList(TokenType.CloseSquareBracket);
+        return new ArrayLiteral(token, elements!); // TODO nulls
+    }
+    
+    private List<IExpression>? ParseExpressionList(TokenType closingToken)
+    {
+        List<IExpression> expressions = new();
+        if (NextTokenIs(closingToken))
+        {
+            NextToken();
+            return expressions;
+        }
+        
+        NextToken();
+        expressions.Add(ParseExpression(Precedence.Lowest)!); // TODO nulls
+        while (NextTokenIs(TokenType.Comma))
+        {
+            NextToken();
+            NextToken();
+            expressions.Add(ParseExpression(Precedence.Lowest)!); // TODO nulls
+        }
+
+        return ExpectNext(closingToken) ? expressions : null; // TODO nulls
+    }
+
     private StringLiteral ParseStringLiteral() => new StringLiteral(Current, Current.Literal);
 
     private CallExpression ParseCallExpression(IExpression function)
     {
         var token = Current;
-        IEnumerable<IExpression> arguments = ParseCallArguments() ?? Enumerable.Empty<IExpression>();
+        var arguments = ParseExpressionList(TokenType.CloseParen)!; // TODO null
         return new CallExpression(token, function, arguments);
-
-        List<IExpression>? ParseCallArguments()
-        {
-            List<IExpression> expressions = new();
-            if (NextTokenIs(TokenType.CloseParen))
-            {
-                NextToken();
-                return expressions;
-            }
-            
-            NextToken();
-            expressions.Add(ParseExpression(Precedence.Lowest)!); // TODO nulls
-            while (NextTokenIs(TokenType.Comma))
-            {
-                NextToken();
-                NextToken();
-                expressions.Add(ParseExpression(Precedence.Lowest)!); // TODO nulls
-            }
-
-            return ExpectNext(TokenType.CloseParen) ?
-                expressions :
-                null;
-        }
     }
     
     private FunctionLiteral? ParseFunctionLiteral()
