@@ -6,13 +6,13 @@ namespace Interpreter.Ast;
 // let add = fn(x, y) { return x + y; }
 // myFunc(x, y, fn(x, y) { return x > y; });
 // fn (<params | empty>) <block statement>
-public record FunctionLiteral(Token Token, ImmutableArray<Identifier> Parameters, BlockStatement Body) : IExpression
+public record FunctionLiteral(Token Token, IReadOnlyList<Identifier> Parameters, BlockStatement Body) : IExpression
 {
-    public FunctionLiteral(Token token, IEnumerable<Identifier> parameters, BlockStatement body) : this(token, parameters.ToImmutableArray(), body)
+    public FunctionLiteral(Token token, IEnumerable<Identifier> parameters, BlockStatement body) : this(token, parameters.ToList().AsReadOnly(), body)
     {}
     
     public Token Token { get; } = Token ?? throw new ArgumentNullException(nameof(Token));
-    public ImmutableArray<Identifier> Parameters { get; } = Parameters;
+    public IReadOnlyList<Identifier> Parameters { get; } = Parameters;
     public BlockStatement Body { get; } = Body ?? throw new ArgumentNullException(nameof(Body));
 
     public string TokenLiteral => Token.Literal;

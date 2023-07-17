@@ -62,7 +62,7 @@ public class Lexer
     {
         string literal = _current.ToString();
         Token token;
-        switch (_current) 
+        switch (_current)
         {
             case '\0':
                 token = new Token(TokenType.EndOfFile, '\0');
@@ -90,6 +90,12 @@ public class Lexer
                 break;
             case '}':
                 token = new Token(TokenType.CloseBrace ,literal);
+                break;
+            case '[':
+                token = new Token(TokenType.OpenSquareBracket ,literal);
+                break;
+            case ']':
+                token = new Token(TokenType.CloseSquareBracket ,literal);
                 break;
             case ',':
                 token = new Token(TokenType.Comma ,literal);

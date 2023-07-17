@@ -10,4 +10,5 @@ public enum Precedence // Order matters!
     Product = 0x50,
     Prefix = 0x60,
     Call = 0x70,
+    Index = 0x80,
 }

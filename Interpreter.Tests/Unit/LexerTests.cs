@@ -474,4 +474,40 @@ public class LexerTests
             _output.WriteLine(actual.ToString());
         }
     }
+    
+    [Fact]
+    public void MoveNextToken_GivenSquareBraces_SquareBraceLiteralTokens()
+    {
+        const string input = """
+            [1, 2];
+            [3, 4, 5];
+            """;
+        List<Token> expected = new()
+        {
+            new Token(TokenType.OpenSquareBracket, "["),
+            new Token(TokenType.Int, "1"),
+            new Token(TokenType.Comma, ","),
+            new Token(TokenType.Int, "2"),
+            new Token(TokenType.CloseSquareBracket, "]"),
+            new Token(TokenType.Semicolon, ";"),
+            
+            new Token(TokenType.OpenSquareBracket, "["),
+            new Token(TokenType.Int, "3"),
+            new Token(TokenType.Comma, ","),
+            new Token(TokenType.Int, "4"),
+            new Token(TokenType.Comma, ","),
+            new Token(TokenType.Int, "5"),
+            new Token(TokenType.CloseSquareBracket, "]"),
+            new Token(TokenType.Semicolon, ";"),
+            new Token(TokenType.EndOfFile, "\0"),
+        };
+
+        Lexer lexer = new(input);
+        foreach (var token in expected)
+        {
+            var actual = lexer.MoveNext();
+            Assert.Equal(token, actual);
+            _output.WriteLine(actual.ToString());
+        }
+    }
 }

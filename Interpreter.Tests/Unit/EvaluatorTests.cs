@@ -298,7 +298,7 @@ public class EvaluatorTests
     [InlineData(@"len("""")", 0L)]
     [InlineData(@"len(""four"")", 4L)]
     [InlineData(@"len(""hello world"")", 11L)]
-    public void Evaluate_BuiltinFunctionLen_Lengths(string input, long expectedLength)
+    public void Evaluate_BuiltinFunctionLenStrings_StringLengths(string input, long expectedLength)
     {
         var evaluated = TestEval(input);
         Assert.NotNull(evaluated);
@@ -315,12 +315,102 @@ public class EvaluatorTests
         AssertCheckErrorMessage(evaluated, expectedError);
     }
     
-    private void AssertCheckErrorMessage(IRuntimeObject actual, string expected)
+    [Theory]
+    [InlineData(@"len([])", 0L)]
+    [InlineData(@"len([1, 2, 3, 4])", 4L)]
+    [InlineData(@"len([""Hello,"", "" world!""])", 2L)]
+    public void Evaluate_BuiltinFunctionLenArrays_ArrayLengths(string input, long expectedLength)
     {
-        var message = Assert.IsType<RuntimeErrorObject>(actual).Message;
-        Assert.Equal(expected, message);
+        var evaluated = TestEval(input);
+        Assert.NotNull(evaluated);
+        AssertCheckIntegerObject(evaluated, expectedLength);
+    }
+
+    [Fact]
+    public void Evaluate_ArrayLiterals_EvaluatesArrayLiteral()
+    {
+        const string input = "[1, 2 * 2, 3 + 3]";
+        var evaluated = TestEval(input);
+        Assert.NotNull(evaluated);
+        var array = Assert.IsType<ArrayObject>(evaluated);
+        Assert.Equal(3, array.Elements.Count);
+        AssertCheckIntegerObject(array.Elements[0], 1);
+        AssertCheckIntegerObject(array.Elements[1], 4);
+        AssertCheckIntegerObject(array.Elements[2], 6);
+    }
+
+    [Theory]
+    [InlineData("[1, 2, 3][0]", 1L)]
+    [InlineData("[1, 2, 3][1]", 2L)]
+    [InlineData("[1, 2, 3][2]", 3L)]
+    [InlineData("let i = 0; [1][i];", 1L)]
+    [InlineData("[1, 2, 3][1 + 1];", 3L)]
+    [InlineData("let myArray = [1, 2, 3]; myArray[2];", 3L)]
+    [InlineData("let myArray = [1, 2, 3]; myArray[0] + myArray[1] + myArray[2];", 6L)]
+    [InlineData("let myArray = [1, 2, 3]; let i = myArray[0]; myArray[i];", 2L)]
+    [InlineData("[1, 2, 3][3]", null)]
+    [InlineData("[1, 2, 3][-1]", null)]
+    public void Evaluate_ArrayIndexExpressions_EvaluatesCorrectIndex<T>(string input, T expected)
+    {
+        var evaluated = TestEval(input);
+        Assert.NotNull(evaluated);
+        AssertCheckObject(evaluated, expected);
+    }
+
+    [Theory]
+    [InlineData("first([1, 2, 3])", 1L)]
+    [InlineData("first([2, 3, 1])", 2L)]
+    [InlineData(@"first([""test"", 3, 1])", "test")]
+    [InlineData("first([true, 3, 1])", true)]
+    [InlineData("first([false, true, false])", false)]
+    [InlineData("first([])", null)]
+    public void Evaluate_BuiltinFunctionFirst_GetsFirstElement<T>(string input, T expected)
+    {
+        var evaluated = TestEval(input);
+        Assert.NotNull(evaluated);
+        AssertCheckObject(evaluated, expected);
+    }
+
+    [Theory]
+    [InlineData("last([1, 2, 3])", 3L)]
+    [InlineData("last([2, 3, 1])", 1L)]
+    [InlineData(@"last([""test"", 3, ""hello, world""])", "hello, world")]
+    [InlineData("last([true, 12931, true])", true)]
+    [InlineData("last([false, true, false])", false)]
+    [InlineData("last([])", null)]
+    public void Evaluate_BuiltinFunctionLast_GetsLastElement<T>(string input, T expected)
+    {
+        var evaluated = TestEval(input);
+        Assert.NotNull(evaluated);
+        AssertCheckObject(evaluated, expected);
     }
     
+    [Theory]
+    [InlineData("rest([1, 2, 3])", new object[] { 2L, 3L })]
+    [InlineData("rest([2, 3, 1])", new object[] { 3L, 1L })]
+    [InlineData(@"rest([""test"", 3, ""hello, world""])", new object[] { 3L, "hello, world" })]
+    [InlineData("rest([true, 12931, true])", new object[] { 12931L, true })]
+    [InlineData("rest([false, true, false])", new object[] { true, false })]
+    [InlineData("rest([])", null)]
+    public void Evaluate_BuiltinFunctionRest_GetsTheRest(string input, object[]? expectedCollection)
+    {
+        var evaluated = TestEval(input);
+        Assert.NotNull(evaluated);
+        if (expectedCollection is not null) { AssertCheckObjectCollection(evaluated, expectedCollection); }
+        else { AssertCheckNullObject(evaluated); }
+    }
+    
+    [Theory]
+    [InlineData("push([1, 2], 3)", new object[] { 1L, 2L, 3L })]
+    [InlineData(@"push([1, 2], ""3"")", new object[] { 1L, 2L, "3" })]
+    public void Evaluate_BuiltinFunctionPush_MakesNewArrayWithValue(string input, object[]? expectedCollection)
+    {
+        var evaluated = TestEval(input);
+        Assert.NotNull(evaluated);
+        if (expectedCollection is not null) { AssertCheckObjectCollection(evaluated, expectedCollection); }
+        else { AssertCheckNullObject(evaluated); }
+    }
+
     private static IRuntimeObject? TestEval(string input)
     {
         Lexer lexer = new(input);
@@ -329,6 +419,39 @@ public class EvaluatorTests
         var program = parser.ParseProgram();
         var evaluated = Evaluator.Evaluate(program, env);
         return evaluated;
+    }
+
+    private static void AssertCheckObjectCollection(IRuntimeObject obj, object[] expected)
+    {
+        var array = Assert.IsType<ArrayObject>(obj);
+        Assert.Equal(expected.Length, array.Elements.Count);
+        for (int i = 0; i < expected.Length; i++)
+        {
+            var expectedElement = expected[i];
+            var actual = array.Elements[i];
+            AssertCheckObject(actual, expectedElement);
+        }
+    }
+
+    private static void AssertCheckObject<T>(IRuntimeObject obj, T expected)
+    {
+        switch (expected)
+        {
+            case long l:
+                AssertCheckIntegerObject(obj, l);
+                break;
+            case string str:
+                AssertCheckStringObject(obj, str);
+                break;
+            case bool b:
+                AssertCheckBooleanObject(obj, b);
+                break;
+            case null:
+                AssertCheckNullObject(obj);
+                break;
+            default:
+                throw new NotImplementedException($"Not implemented: {typeof(T)}");
+        }
     }
 
     private static StringObject AssertCheckStringObject(IRuntimeObject obj, string expectedValue)
@@ -346,6 +469,12 @@ public class EvaluatorTests
         }
     }
     
+    private void AssertCheckErrorMessage(IRuntimeObject actual, string expected)
+    {
+        var message = Assert.IsType<RuntimeErrorObject>(actual).Message;
+        Assert.Equal(expected, message);
+    }
+
     private static NullObject AssertCheckNullObject(IRuntimeObject evaluated)
     {
         var nullObj = Assert.IsType<NullObject>(evaluated);

@@ -17,6 +17,7 @@ public enum TokenType
     // Delimiters
     OpenParen, CloseParen,
     OpenBrace, CloseBrace,
+    OpenSquareBracket, CloseSquareBracket,
     Comma, Semicolon,
     
     // Keywords

@@ -22,15 +22,16 @@ public class Parser
     // Public readonly static properties
     public static IReadOnlyDictionary<TokenType, Precedence> Precedences { get; } = new Dictionary<TokenType, Precedence>()
     {
-        { TokenType.Equals, Precedence.Equals },
-        { TokenType.NotEquals, Precedence.Equals },
-        { TokenType.LessThan, Precedence.LessGreater },
-        { TokenType.GreaterThan, Precedence.LessGreater },
-        { TokenType.Plus, Precedence.Sum },
-        { TokenType.Minus, Precedence.Sum },
-        { TokenType.Splat, Precedence.Product },
-        { TokenType.Slash, Precedence.Product },
-        { TokenType.OpenParen, Precedence.Call },
+        [TokenType.Equals] = Precedence.Equals,
+        [TokenType.NotEquals] = Precedence.Equals,
+        [TokenType.LessThan] = Precedence.LessGreater,
+        [TokenType.GreaterThan] = Precedence.LessGreater,
+        [TokenType.Plus] = Precedence.Sum,
+        [TokenType.Minus] = Precedence.Sum,
+        [TokenType.Splat] = Precedence.Product,
+        [TokenType.Slash] = Precedence.Product,
+        [TokenType.OpenParen] = Precedence.Call,
+        [TokenType.OpenSquareBracket] = Precedence.Index,
     };
 
     public Parser(Lexer lexer)
@@ -50,6 +51,7 @@ public class Parser
         RegisterPrefix(TokenType.If, ParseIfExpression!);
         RegisterPrefix(TokenType.Function, ParseFunctionLiteral!);
         RegisterPrefix(TokenType.String, ParseStringLiteral!);
+        RegisterPrefix(TokenType.OpenSquareBracket, ParseArrayLiteral);
         
         // Register infixers
         RegisterInfix(TokenType.Plus, ParseInfixExpression);
@@ -61,8 +63,9 @@ public class Parser
         RegisterInfix(TokenType.LessThan, ParseInfixExpression);
         RegisterInfix(TokenType.GreaterThan, ParseInfixExpression);
         RegisterInfix(TokenType.OpenParen, ParseCallExpression);
+        RegisterInfix(TokenType.OpenSquareBracket, ParseIndexExpression);
     }
-    
+
     public Program ParseProgram()
     {
         Program program = new();
@@ -80,36 +83,53 @@ public class Parser
         return program;
     }
 
+    private IndexExpression? ParseIndexExpression(IExpression left)
+    {
+        var token = Current;
+
+        NextToken();
+        var index = ParseExpression(Precedence.Lowest);
+
+        return ExpectNext(TokenType.CloseSquareBracket) ?
+            new IndexExpression(token, left, index) :
+            null;
+    }
+
+    private ArrayLiteral ParseArrayLiteral()
+    {
+        var token = Current;
+        var elements = ParseExpressionList(TokenType.CloseSquareBracket);
+        return new ArrayLiteral(token, elements!); // TODO nulls
+    }
+    
+    private List<IExpression>? ParseExpressionList(TokenType closingToken)
+    {
+        List<IExpression> expressions = new();
+        if (NextTokenIs(closingToken))
+        {
+            NextToken();
+            return expressions;
+        }
+        
+        NextToken();
+        expressions.Add(ParseExpression(Precedence.Lowest)!); // TODO nulls
+        while (NextTokenIs(TokenType.Comma))
+        {
+            NextToken();
+            NextToken();
+            expressions.Add(ParseExpression(Precedence.Lowest)!); // TODO nulls
+        }
+
+        return ExpectNext(closingToken) ? expressions : null; // TODO nulls
+    }
+
     private StringLiteral ParseStringLiteral() => new StringLiteral(Current, Current.Literal);
 
     private CallExpression ParseCallExpression(IExpression function)
     {
         var token = Current;
-        IEnumerable<IExpression> arguments = ParseCallArguments() ?? Enumerable.Empty<IExpression>();
+        var arguments = ParseExpressionList(TokenType.CloseParen)!; // TODO null
         return new CallExpression(token, function, arguments);
-
-        List<IExpression>? ParseCallArguments()
-        {
-            List<IExpression> expressions = new();
-            if (NextTokenIs(TokenType.CloseParen))
-            {
-                NextToken();
-                return expressions;
-            }
-            
-            NextToken();
-            expressions.Add(ParseExpression(Precedence.Lowest)!); // TODO nulls
-            while (NextTokenIs(TokenType.Comma))
-            {
-                NextToken();
-                NextToken();
-                expressions.Add(ParseExpression(Precedence.Lowest)!); // TODO nulls
-            }
-
-            return ExpectNext(TokenType.CloseParen) ?
-                expressions :
-                null;
-        }
     }
     
     private FunctionLiteral? ParseFunctionLiteral()
