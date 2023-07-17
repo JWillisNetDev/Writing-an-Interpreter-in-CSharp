@@ -52,6 +52,7 @@ public class Parser
         RegisterPrefix(TokenType.Function, ParseFunctionLiteral!);
         RegisterPrefix(TokenType.String, ParseStringLiteral!);
         RegisterPrefix(TokenType.OpenSquareBracket, ParseArrayLiteral);
+        RegisterPrefix(TokenType.OpenBrace, ParseHashLiteral!); // TODO nulls
         
         // Register infixers
         RegisterInfix(TokenType.Plus, ParseInfixExpression);
@@ -63,7 +64,7 @@ public class Parser
         RegisterInfix(TokenType.LessThan, ParseInfixExpression);
         RegisterInfix(TokenType.GreaterThan, ParseInfixExpression);
         RegisterInfix(TokenType.OpenParen, ParseCallExpression);
-        RegisterInfix(TokenType.OpenSquareBracket, ParseIndexExpression);
+        RegisterInfix(TokenType.OpenSquareBracket, ParseIndexExpression!); // TODO nulls
     }
 
     public Program ParseProgram()
@@ -83,6 +84,28 @@ public class Parser
         return program;
     }
 
+    private HashLiteral? ParseHashLiteral() // TODO nulls
+    {
+        var token = Current;
+        Dictionary<IExpression, IExpression> pairs = new();
+        while (!NextTokenIs(TokenType.CloseBrace))
+        {
+            NextToken();
+            var key = ParseExpression(Precedence.Lowest);
+            if (!ExpectNext(TokenType.Colon)) { return null; }
+
+            NextToken();
+            var value = ParseExpression(Precedence.Lowest);
+
+            pairs[key!] = value!; // TODO nulls
+
+            if (!NextTokenIs(TokenType.CloseBrace) && !ExpectNext(TokenType.Comma)) { return null; }
+        }
+        return ExpectNext(TokenType.CloseBrace) ?
+            new HashLiteral(token, pairs) :
+            null; // TODO nulls
+    }
+    
     private IndexExpression? ParseIndexExpression(IExpression left)
     {
         var token = Current;
@@ -91,7 +114,7 @@ public class Parser
         var index = ParseExpression(Precedence.Lowest);
 
         return ExpectNext(TokenType.CloseSquareBracket) ?
-            new IndexExpression(token, left, index) :
+            new IndexExpression(token, left, index!) : // TODO nulls
             null;
     }
 
