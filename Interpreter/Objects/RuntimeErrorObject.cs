@@ -9,6 +9,6 @@ public class RuntimeErrorObject : IRuntimeObject
     
     public string? Message { get; set; }
 
-    public RuntimeObjectType Type => RuntimeObjectType.ErrorObject;
+    public RuntimeObjectType Type => RuntimeObjectType.Error;
     public string Inspect() => $"ERROR: {Message}";
 }

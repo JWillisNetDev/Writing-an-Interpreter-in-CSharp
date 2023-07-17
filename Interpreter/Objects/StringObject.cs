@@ -1,6 +1,6 @@
 namespace Interpreter.Objects;
 
-public class StringObject : IRuntimeObject
+public class StringObject : IRuntimeObject, IHashable
 {
     public string Value { get; set; }
 
@@ -9,6 +9,9 @@ public class StringObject : IRuntimeObject
         Value = value;
     }
 
-    public RuntimeObjectType Type => RuntimeObjectType.StringObject;
+    public RuntimeObjectType Type => RuntimeObjectType.String;
+
     public string Inspect() => Value;
+    
+    public HashKey GetHash() => new(Type, Convert.ToUInt64(Value.GetHashCode()));
 }

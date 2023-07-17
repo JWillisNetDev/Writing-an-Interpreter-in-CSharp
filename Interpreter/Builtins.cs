@@ -22,7 +22,7 @@ public static class Builtins
     {
         [ArrayObject { Elements.Count: > 0 } arrObj] => arrObj.Elements[0],
         not null when IsArgumentCountMismatch(args, 1, out var err) => err,
-        [{ Type: not RuntimeObjectType.Array } obj] => new RuntimeErrorObject($"argument to `first` expected=ArrayObject, got={obj.Type}"),
+        [{ Type: not RuntimeObjectType.Array } obj] => new RuntimeErrorObject($"argument to `first` expected={RuntimeObjectType.Array}, got={obj.Type}"),
         _ => Evaluator.RuntimeConstants.Null,
     };
 
@@ -30,7 +30,7 @@ public static class Builtins
     {
         [ArrayObject { Elements.Count: > 0 } arrObj] => arrObj.Elements[^1],
         not null when IsArgumentCountMismatch(args, 1, out var err) => err,
-        [{ Type: not RuntimeObjectType.Array } obj] => new RuntimeErrorObject($"argument to `first` expected=ArrayObject, got={obj.Type}"),
+        [{ Type: not RuntimeObjectType.Array } obj] => new RuntimeErrorObject($"argument to `first` expected={RuntimeObjectType.Array}, got={obj.Type}"),
         _ => Evaluator.RuntimeConstants.Null,
     };
 
@@ -47,7 +47,7 @@ public static class Builtins
     {
         [ArrayObject array, { } toPush] => new ArrayObject(array.Elements.Append(toPush)),
         not null when IsArgumentCountMismatch(args, 2, out var err) => err,
-        [{ Type: not RuntimeObjectType.Array } target, ..] => new RuntimeErrorObject($"argument to `first` expected=ArrayObject, got={target.Type}"),
+        [{ Type: not RuntimeObjectType.Array } target, ..] => new RuntimeErrorObject($"argument to `first` expected={RuntimeObjectType.Array}, got={target.Type}"),
         _ => throw new InvalidOperationException(),
     };
 
@@ -55,7 +55,7 @@ public static class Builtins
     {
         [ArrayObject { Elements.Count: > 0 } arrObj] => new ArrayObject(arrObj.Elements.Skip(1)),
         not null when IsArgumentCountMismatch(args, 1, out var err) => err,
-        [{ Type: not RuntimeObjectType.Array } obj] => new RuntimeErrorObject($"argument to `first` expected=ArrayObject, got={obj.Type}"),
+        [{ Type: not RuntimeObjectType.Array } obj] => new RuntimeErrorObject($"argument to `first` expected={RuntimeObjectType.Array}, got={obj.Type}"),
         _ => Evaluator.RuntimeConstants.Null,
     };
 

@@ -186,7 +186,7 @@ public static class Evaluator
     private static RuntimeErrorObject UnknownInfixOperatorError(string infixOperator, IRuntimeObject left, IRuntimeObject right)
         => Error($"unknown operator: {left.Type} {infixOperator} {right.Type}");
 
-    private static bool IsError(IRuntimeObject? obj) => obj is { Type: RuntimeObjectType.ErrorObject };
+    private static bool IsError(IRuntimeObject? obj) => obj is { Type: RuntimeObjectType.Error };
     
     private static bool IsTruthy(IRuntimeObject? obj) => obj switch
     {
@@ -202,7 +202,7 @@ public static class Evaluator
         foreach (var statement in block.Statements)
         {
             result = Evaluate(statement, env);
-            if (result.Type is RuntimeObjectType.ReturnObject or RuntimeObjectType.ErrorObject) { return result; }
+            if (result.Type is RuntimeObjectType.Return or RuntimeObjectType.Error) { return result; }
         }
         return result;
     }
