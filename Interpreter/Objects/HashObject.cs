@@ -4,9 +4,13 @@ public class HashObject : IRuntimeObject
 {
     public record HashPair(IRuntimeObject Key, IRuntimeObject Value);
 
-    private readonly Dictionary<HashKey, HashPair> _pairs = new();
-    public IReadOnlyDictionary<HashKey, HashPair> Pairs => _pairs;
+    public IReadOnlyDictionary<HashKey, HashPair> Pairs { get; }
 
+    public HashObject(IReadOnlyDictionary<HashKey, HashPair> pairs)
+    {
+        Pairs = pairs;
+    }
+    
     public RuntimeObjectType Type => RuntimeObjectType.Hash;
 
     public string Inspect()

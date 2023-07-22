@@ -44,14 +44,17 @@ public static class Evaluator
                     && IsError(last)) { return last; }
                 return new ArrayObject(elements);
             
-            case IntegerLiteral integer:
-                return new IntegerObject(integer.Value);
-            
             case BooleanLiteral boolean:
                 return BooleanNativeAsObject(boolean.Value);
             
             case FunctionLiteral func:
                 return new FunctionObject(func.Parameters, func.Body, env);
+            
+            case HashLiteral hash:
+                return EvaluateHashLiteral(hash, env);
+            
+            case IntegerLiteral integer:
+                return new IntegerObject(integer.Value);
             
             case StringLiteral str:
                 return new StringObject(str.Value);
@@ -93,6 +96,25 @@ public static class Evaluator
         return RuntimeConstants.Null;
     }
     
+    private static IRuntimeObject EvaluateHashLiteral(HashLiteral hash, Environment env)
+    {
+        Dictionary<HashKey, HashObject.HashPair> pairs = new();
+        foreach (var (keyNode, valueNode) in hash.Pairs)
+        {
+            var key = Evaluate(keyNode, env);
+            if (IsError(key)) { return key; }
+            if (key is IHashable hashObj)
+            {
+                var value = Evaluate(valueNode, env);
+                if (IsError(value)) { return value; }
+                
+                pairs[hashObj.GetHashKey()] = new HashObject.HashPair(key, value);
+            }
+            else return Error($"unusable as hash key: {key.Type}");
+        }
+        return new HashObject(pairs);
+    }
+
     private static IRuntimeObject EvaluateIndexExpression(IRuntimeObject left, IRuntimeObject index)
     {
         if (left is ArrayObject leftObj && index is IntegerObject indexObj)
