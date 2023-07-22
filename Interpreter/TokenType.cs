@@ -19,6 +19,7 @@ public enum TokenType
     OpenBrace, CloseBrace,
     OpenSquareBracket, CloseSquareBracket,
     Comma, Semicolon,
+    Colon,
     
     // Keywords
     Function, Let,

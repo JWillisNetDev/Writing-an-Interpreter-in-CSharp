@@ -9,6 +9,6 @@ public class ReturnValueObject : IRuntimeObject
     
     public IRuntimeObject Value { get; set; }
 
-    public RuntimeObjectType Type => RuntimeObjectType.ReturnObject;
+    public RuntimeObjectType Type => RuntimeObjectType.Return;
     public string Inspect() => Value.Inspect();
 }

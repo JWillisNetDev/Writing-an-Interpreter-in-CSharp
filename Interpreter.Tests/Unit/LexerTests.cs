@@ -510,4 +510,44 @@ public class LexerTests
             _output.WriteLine(actual.ToString());
         }
     }
+    
+    [Fact]
+    public void MoveNextToken_GivenColon_ColonLiteralTokens()
+    {
+        const string input = """
+            {"foo": "bar"};
+            {"a": "b", "c": "d"};
+            """;
+        
+        List<Token> expected = new()
+        {
+            new Token(TokenType.OpenBrace, "{"),
+            new Token(TokenType.String, "foo"),
+            new Token(TokenType.Colon, ":"),
+            new Token(TokenType.String, "bar"),
+            new Token(TokenType.CloseBrace, "}"),
+            new Token(TokenType.Semicolon, ";"),
+            
+            new Token(TokenType.OpenBrace, "{"),
+            new Token(TokenType.String, "a"),
+            new Token(TokenType.Colon, ":"),
+            new Token(TokenType.String, "b"),
+            new Token(TokenType.Comma, ","),
+            new Token(TokenType.String, "c"),
+            new Token(TokenType.Colon, ":"),
+            new Token(TokenType.String, "d"),
+            new Token(TokenType.CloseBrace, "}"),
+            new Token(TokenType.Semicolon, ";"),
+            
+            new Token(TokenType.EndOfFile, "\0"),
+        };
+
+        Lexer lexer = new(input);
+        foreach (var token in expected)
+        {
+            var actual = lexer.MoveNext();
+            Assert.Equal(token, actual);
+            _output.WriteLine(actual.ToString());
+        }
+    }
 }

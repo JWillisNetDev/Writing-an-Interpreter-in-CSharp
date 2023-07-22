@@ -188,18 +188,18 @@ public class EvaluatorTests
     }
 
     [Theory]
-    [InlineData("5 + true;", $"type mismatch: IntegerObject + BooleanObject")]
-    [InlineData("5 + true; 5;", "type mismatch: IntegerObject + BooleanObject")]
-    [InlineData("-true", "unknown operator: -BooleanObject")]
-    [InlineData("true + false;", "unknown operator: BooleanObject + BooleanObject")]
-    [InlineData("5; true + false; 5", "unknown operator: BooleanObject + BooleanObject")]
-    [InlineData("if (10 > 1) { true + false; }", "unknown operator: BooleanObject + BooleanObject")]
+    [InlineData("5 + true;", $"type mismatch: Integer + Boolean")]
+    [InlineData("5 + true; 5;", "type mismatch: Integer + Boolean")]
+    [InlineData("-true", "unknown operator: -Boolean")]
+    [InlineData("true + false;", "unknown operator: Boolean + Boolean")]
+    [InlineData("5; true + false; 5", "unknown operator: Boolean + Boolean")]
+    [InlineData("if (10 > 1) { true + false; }", "unknown operator: Boolean + Boolean")]
     [InlineData("""
         if (10 > 1) {
             if (10 > 1) { return true + false; }
             return 1;
         }
-        """, "unknown operator: BooleanObject + BooleanObject")]
+        """, "unknown operator: Boolean + Boolean")]
     [InlineData("foobar", "identifier not found: foobar")]
     public void Evaluate_ErrorHandling_CreatesExpectedErrorMessages(string input, string expected)
     {
@@ -306,7 +306,7 @@ public class EvaluatorTests
     }
 
     [Theory]
-    [InlineData(@"len(1)", "argument to `len` not supported, got IntegerObject")]
+    [InlineData(@"len(1)", "argument to `len` not supported, got Integer")]
     [InlineData(@"len(""one"", ""two"")", "wrong number of arguments. got=2, wanted=1")]
     public void Evaluate_BuiltinFunctionLenErrors_Errors(string input, string expectedError)
     {

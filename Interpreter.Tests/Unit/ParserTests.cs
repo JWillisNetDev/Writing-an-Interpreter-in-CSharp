@@ -445,10 +445,89 @@ public class ParserTests
         AssertCheckInfixExpression(index.Index, 1, "+", 1);
     }
 
+    [Fact]
+    public void ParseProgram_HashLiteral_ParsesHashLiteralStringKeys()
+    {
+        const string input = """
+            { "one": 1, "two": 2, "three": 3 }
+            """;
+        
+        Dictionary<string, long> expected = new()
+        {
+            ["one"] = 1, ["two"] = 2, ["three"] = 3,
+        };
+        
+        Lexer lexer = new(input);
+        Parser parser = new(lexer);
+
+        Program actual = parser.ParseProgram();
+
+        AssertCheckParserErrors(parser);
+
+        var expression = Assert.IsType<ExpressionStatement>(Assert.Single(actual.Statements)).Expression;
+        var hash = Assert.IsType<HashLiteral>(expression);
+        Assert.Equal(expected.Count, hash.Pairs.Count);
+        foreach (var kvp in hash.Pairs)
+        {
+            var literal = Assert.IsType<StringLiteral>(kvp.Key);
+            var expectedValue = expected[literal.ToString()];
+            AssertCheckIntegerLiteral(kvp.Value, expectedValue);
+        }
+    }
+    
+    [Fact]
+    public void ParseProgram_HashLiteralEmpty_ParsesEmptyHashLiteral()
+    {
+        const string input = "{}";
+        
+        Lexer lexer = new(input);
+        Parser parser = new(lexer);
+
+        Program actual = parser.ParseProgram();
+
+        AssertCheckParserErrors(parser);
+
+        var expression = Assert.IsType<ExpressionStatement>(Assert.Single(actual.Statements)).Expression;
+        var hash = Assert.IsType<HashLiteral>(expression);
+        Assert.Empty(hash.Pairs);
+    }
+    
+    [Fact]
+    public void ParseProgram_HashLiteralWithExpressions_ParsesEmptyHashLiteralWithExpressions()
+    {
+        const string input = """
+            { "one": 0 + 1, "two": 10 - 8, "three": 15 / 5 }
+            """;
+        
+        Lexer lexer = new(input);
+        Parser parser = new(lexer);
+
+        Program actual = parser.ParseProgram();
+
+        AssertCheckParserErrors(parser);
+
+        var expression = Assert.IsType<ExpressionStatement>(Assert.Single(actual.Statements)).Expression;
+        var hash = Assert.IsType<HashLiteral>(expression);
+        Assert.Equal(3, hash.Pairs.Count);
+
+        Dictionary<string, Action<IExpression>> asserts = new()
+        {
+            ["one"] = e => AssertCheckInfixExpression(e, 0L, "+", 1L),
+            ["two"] = e => AssertCheckInfixExpression(e, 10L, "-", 8L),
+            ["three"] = e => AssertCheckInfixExpression(e, 15L, "/", 5L),
+        };
+        
+        foreach (var kvp in hash.Pairs)
+        {
+            var literal = Assert.IsType<StringLiteral>(kvp.Key);
+            asserts[literal.TokenLiteral](kvp.Value);
+        }
+    }
+    
     private void AssertCheckParserErrors(Parser parser)
     {
         foreach (string error in parser.Errors) { _output.WriteLine(error); }
-        Assert.Equal(0, parser.Errors.Count);
+        Assert.Empty(parser.Errors);
     }
 
     private T AssertCheckLiteralExpression<T>(IExpression expression, T expected) => expected switch

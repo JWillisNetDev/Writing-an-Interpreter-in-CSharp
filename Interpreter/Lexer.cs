@@ -79,6 +79,9 @@ public class Lexer
             case ';':
                 token = new Token(TokenType.Semicolon, literal);
                 break;
+            case ':':
+                token = new Token(TokenType.Colon, literal);
+                break;
             case '(':
                 token = new Token(TokenType.OpenParen ,literal);
                 break;

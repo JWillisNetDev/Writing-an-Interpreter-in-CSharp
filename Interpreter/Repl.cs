@@ -3,15 +3,14 @@ namespace Interpreter;
 public class Repl
 {
     public const string Prompt = ">> ";
-
-    public void Start(TextReader reader, TextWriter writer)
+    
+    public Repl Attach(TextReader reader, TextWriter writer, Environment env)
     {
-        Environment env = new();
         while (true)
         {
             writer.Write(Prompt);
             string? line = reader.ReadLine(); 
-            if (line is null) { return; }
+            if (line is null) { return this; }
 
             Lexer lexer = new(line);
             Parser parser = new(lexer);
@@ -29,7 +28,14 @@ public class Repl
             }
         }
     }
-
+    
+    public Repl Start(TextReader reader, TextWriter writer, out Environment env)
+    {
+        env = new();
+        Attach(reader, writer, env);
+        return this;
+    }
+    
     private static void PrintParserErrors(Parser parser, TextWriter writer)
     {
         foreach (var error in parser.Errors)

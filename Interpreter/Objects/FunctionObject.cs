@@ -18,7 +18,7 @@ public class FunctionObject : IRuntimeObject
         Environment = environment;
     }
     
-    public RuntimeObjectType Type => RuntimeObjectType.FunctionObject;
+    public RuntimeObjectType Type => RuntimeObjectType.Function;
 
     public string Inspect()
     {
