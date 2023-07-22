@@ -13,5 +13,5 @@ public class StringObject : IRuntimeObject, IHashable
 
     public string Inspect() => Value;
     
-    public HashKey GetHash() => new(Type, Convert.ToUInt64(Value.GetHashCode()));
+    public HashKey GetHashKey() => new(Type, Convert.ToInt64(Value.GetHashCode()));
 }

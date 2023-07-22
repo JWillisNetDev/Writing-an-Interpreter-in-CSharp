@@ -2,5 +2,5 @@ namespace Interpreter.Objects;
 
 public interface IHashable
 {
-    HashKey GetHash();
+    HashKey GetHashKey();
 }

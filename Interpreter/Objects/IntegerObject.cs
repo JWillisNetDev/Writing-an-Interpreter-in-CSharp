@@ -12,6 +12,6 @@ public class IntegerObject: IRuntimeObject, IHashable
     public RuntimeObjectType Type => RuntimeObjectType.Integer;
     
     public string Inspect() => Value.ToString();
-    
-    public HashKey GetHash() => new(Type, Convert.ToUInt64(Value));
+
+    public HashKey GetHashKey() => new(Type, Value);
 }

@@ -11,7 +11,7 @@ public class BooleanObject : IRuntimeObject, IHashable
 
     public RuntimeObjectType Type => RuntimeObjectType.Boolean;
 
-    public HashKey GetHash() => new(Type, Convert.ToUInt64(Value));
+    public HashKey GetHashKey() => new(Type, Value ? 1L : 0L);
     
     public string Inspect() => Value.ToString();
 }
