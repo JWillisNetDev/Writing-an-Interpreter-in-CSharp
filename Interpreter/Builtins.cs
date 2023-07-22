@@ -12,8 +12,8 @@ public static class Builtins
         ["last"] = new BuiltinObject(Last),
         ["rest"] = new BuiltinObject(Rest),
         ["push"] = new BuiltinObject(Push),
+        ["puts"] = new BuiltinObject(Puts)
     };
-
     public static BuiltinObject Get(string name) => _builtins[name];
 
     public static bool TryGet(string name, [NotNullWhen(true)] out BuiltinObject? value) => _builtins.TryGetValue(name, out value);
@@ -50,6 +50,15 @@ public static class Builtins
         [{ Type: not RuntimeObjectType.Array } target, ..] => new RuntimeErrorObject($"argument to `first` expected={RuntimeObjectType.Array}, got={target.Type}"),
         _ => throw new InvalidOperationException(),
     };
+
+    private static IRuntimeObject Puts(IRuntimeObject[] objects)
+    {
+        foreach (var @object in objects)
+        {
+            Evaluator.StandardOut.WriteLine(@object.Inspect());
+        }
+        return Evaluator.RuntimeConstants.Null;
+    }
 
     private static IRuntimeObject Rest(IRuntimeObject[] args) => args switch
     {

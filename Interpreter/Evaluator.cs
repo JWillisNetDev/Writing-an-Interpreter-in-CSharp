@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using Interpreter.Ast;
 using Interpreter.Objects;
 
@@ -10,6 +11,55 @@ public static class Evaluator
         public static NullObject Null { get; } = new();
         public static BooleanObject True { get; } = new(true);
         public static BooleanObject False { get; } = new(false);
+    }
+
+    public static class StandardOut
+    {
+        private static TextWriter? _writer;
+
+        [MemberNotNull(nameof(_writer))]
+        private static void ThrowIfNotAttached()
+        {
+            if (!IsAttached)
+            {
+                throw new InvalidOperationException("Attempted to write to standard output when no stream was attached");
+            }
+        }
+        
+        internal static void Write(string str)
+        {
+            ThrowIfNotAttached();
+            _writer.Write(str);
+            _writer.Flush();
+        }
+
+        internal static async Task WriteAsync(string str)
+        {
+            ThrowIfNotAttached();
+            await _writer.WriteAsync(str);
+            await _writer.FlushAsync();
+        }
+
+        internal static void WriteLine(string str)
+        {
+            ThrowIfNotAttached();
+            _writer.WriteLine(str);
+            _writer.Flush();
+        }
+        
+        internal static async Task WriteLineAsync(string str)
+        {
+            ThrowIfNotAttached();
+            await _writer.WriteLineAsync(str);
+            await _writer.FlushAsync();
+        }
+        
+        public static void AttachToStream(StreamWriter stream) => _writer = stream;
+        
+        public static void DetachFromStream() => _writer = null;
+        
+        [MemberNotNullWhen(true, nameof(_writer))]
+        public static bool IsAttached => _writer is not null;
     }
 
     public static IRuntimeObject Evaluate(INode node, Environment env)
@@ -117,17 +167,29 @@ public static class Evaluator
 
     private static IRuntimeObject EvaluateIndexExpression(IRuntimeObject left, IRuntimeObject index)
     {
-        if (left is ArrayObject leftObj && index is IntegerObject indexObj)
+        return (left, index) switch
         {
-            return EvaluateArrayIndexExpression(leftObj, indexObj);
-        }
-        return Error($"index operator not supported: {left.Type}");
+            (ArrayObject arr, IntegerObject intIndex) => EvaluateArrayIndexExpression(arr, intIndex),
+            (HashObject hash, _) => EvaluateHashIndexExpression(hash, index),
+            _ => Error($"index operator not supported: {left.Type}"),
+        };
     }
     
+    private static IRuntimeObject EvaluateHashIndexExpression(HashObject hash, IRuntimeObject index)
+    {
+        if (index is IHashable hashable)
+        {
+            return hash.Pairs.TryGetValue(hashable.GetHashKey(), out var pair) ?
+                pair.Value :
+                RuntimeConstants.Null;
+        }
+        return Error($"unusable as hash key: {index.Type}");
+    }
+
     private static IRuntimeObject EvaluateArrayIndexExpression(ArrayObject left, IntegerObject index)
     {
-        if (index.Value >= 0 && index.Value < left.Elements.Count) { return left.Elements[(int)index.Value]; } // This cast is evil.
-        return RuntimeConstants.Null;
+        if (index.Value >= 0 && index.Value < left.Elements.Count) { return left.Elements[(int)index.Value]; } // TODO This cast is evil.
+        return RuntimeConstants.Null; 
     }
 
     private static IRuntimeObject BindFunction(IRuntimeObject function, IRuntimeObject[] arguments)
@@ -141,7 +203,7 @@ public static class Evaluator
         if (function is BuiltinObject builtin) { return builtin.Function(arguments); }
         return Error($"not a function: {function.Type}");
         
-        Environment ExtendFunctionEnvironment(FunctionObject fn, IReadOnlyList<IRuntimeObject> args)
+        static Environment ExtendFunctionEnvironment(FunctionObject fn, IReadOnlyList<IRuntimeObject> args)
         {
             Environment env = new(fn.Environment);
             for (int i = 0; i < fn.Parameters.Count; i++)
@@ -152,7 +214,7 @@ public static class Evaluator
             return env;
         }
         
-        IRuntimeObject UnwrapReturnValue(IRuntimeObject obj)
+        static IRuntimeObject UnwrapReturnValue(IRuntimeObject obj)
         {
             if (obj is ReturnValueObject retObj) { return retObj.Value; }
             return obj;
