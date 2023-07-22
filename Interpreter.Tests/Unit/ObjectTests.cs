@@ -7,12 +7,12 @@ public class ObjectTests
     {
         var hello1 = new StringObject("Hello, world!");
         var hello2 = new StringObject("Hello, world!");
-        Assert.Equal(hello1.GetHash(), hello2.GetHash());
+        Assert.Equal(hello1.GetHashKey(), hello2.GetHashKey());
 
         var diff1 = new StringObject("My name is johnny");
         var diff2 = new StringObject("My name is johnny");
-        Assert.Equal(diff1.GetHash(), diff2.GetHash());
+        Assert.Equal(diff1.GetHashKey(), diff2.GetHashKey());
 
-        Assert.NotEqual(hello1.GetHash(), diff1.GetHash());
+        Assert.NotEqual(hello1.GetHashKey(), diff1.GetHashKey());
     }
 }

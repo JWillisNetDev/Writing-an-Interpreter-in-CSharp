@@ -201,9 +201,10 @@ public class EvaluatorTests
         }
         """, "unknown operator: Boolean + Boolean")]
     [InlineData("foobar", "identifier not found: foobar")]
+    [InlineData(@"{""name"": ""Monkey""}[fn(x){x}];", "unusable as hash key: Function")]
     public void Evaluate_ErrorHandling_CreatesExpectedErrorMessages(string input, string expected)
     {
-        var actual = TestEval(input);
+        var actual = TestEval(input, errorCheck: false);
         Assert.NotNull(actual);
         AssertCheckErrorMessage(actual, expected);
     }
@@ -310,7 +311,7 @@ public class EvaluatorTests
     [InlineData(@"len(""one"", ""two"")", "wrong number of arguments. got=2, wanted=1")]
     public void Evaluate_BuiltinFunctionLenErrors_Errors(string input, string expectedError)
     {
-        var evaluated = TestEval(input);
+        var evaluated = TestEval(input, errorCheck: false);
         Assert.NotNull(evaluated);
         AssertCheckErrorMessage(evaluated, expectedError);
     }
@@ -411,13 +412,111 @@ public class EvaluatorTests
         else { AssertCheckNullObject(evaluated); }
     }
 
-    private static IRuntimeObject? TestEval(string input)
+    [Fact]
+    public void Evaluate_BuiltinFunctionPuts_ReturnsRuntimeNull()
+    {
+        using Stream stream = new MemoryStream();
+        using StreamWriter writer = new(stream);
+        Evaluator.StandardOut.AttachToStream(writer);
+
+        const string input = @"puts(""hello, world!"")";
+        var evaluated = TestEval(input);
+        Assert.NotNull(evaluated);
+        AssertCheckNullObject(evaluated);
+    }
+    
+    [Theory]
+    [InlineData(@"puts(""hello, world!"");", "hello, world!")]
+    [InlineData(@"let foo = ""output!""; puts(foo);", "output!")]
+    [InlineData(@"puts(""hello"", "" "", ""world!"")", "hello", " ", "world!")]
+    [InlineData(@"puts(1337)", "1337")]
+    [InlineData(@"puts(1337, ""1338"")", "1337", "1338")]
+    [InlineData(@"puts("""")", "")]
+    public void Evaluate_BuiltinFunctionPuts_PutsExpectedToStream(string input, params string[] expectedLines)
+    {
+        using Stream outStream = new MemoryStream();
+        using TextReader reader = new StreamReader(outStream);
+        using StreamWriter writer = new(outStream);
+        Evaluator.StandardOut.AttachToStream(writer);
+        
+        var evaluated = TestEval(input);
+        Assert.NotNull(evaluated);
+        outStream.Position = 0L;
+        string? line = reader.ReadLine();
+        Assert.NotNull(line);
+        for (int i = 0; line is not null; i++)
+        {
+            Assert.Equal(expectedLines[i], line);
+            line = reader.ReadLine();
+        }
+    }
+    
+    [Fact]
+    public void Evaluate_HashLiterals_CreatesExpectedHashMap()
+    {
+        const string input = """
+            let two = "two";
+            {
+                "one": 10 - 9,
+                two: 1 + 1,
+                "thr" + "ee": 6 / 2,
+                4: 4,
+                true: 5,
+                false: 6
+            }
+            """;
+
+        var evaluated = TestEval(input);
+        var hash = Assert.IsType<HashObject>(evaluated);
+
+        Dictionary<HashKey, long> expected = new()
+        {
+            [HashKeyFromString("one")] = 1L,
+            [HashKeyFromString("two")] = 2L,
+            [HashKeyFromString("three")] = 3L,
+            [HashKeyFromLong(4L)] = 4L,
+            [HashKeyFromBool(true)] = 5L,
+            [HashKeyFromBool(false)] = 6L,
+        };
+        
+        Assert.Equal(expected.Count, hash.Pairs.Count);
+        foreach (KeyValuePair<HashKey, long> kvp in expected)
+        {
+            var actual = Assert.Contains(kvp.Key, hash.Pairs);
+            AssertCheckIntegerObject(actual.Value, kvp.Value);
+        }
+        
+        static HashKey HashKeyFromString(string str) => new StringObject(str).GetHashKey();
+        static HashKey HashKeyFromLong(long l) => new IntegerObject(l).GetHashKey();
+        static HashKey HashKeyFromBool(bool b) => b ? Evaluator.RuntimeConstants.True.GetHashKey() : Evaluator.RuntimeConstants.False.GetHashKey();
+    }
+
+    [Theory]
+    [InlineData(@"{""foo"": 5}[""foo""]", 5L)]
+    [InlineData(@"{""foo"": 5}[""bar""]", null)]
+    [InlineData(@"let key = ""foo""; {""foo"": 5}[key]", 5L)]
+    [InlineData(@"{}[""foo""]", null)]
+    [InlineData(@"{5: 5}[5]", 5L)]
+    [InlineData(@"{true: 5}[true]", 5L)]
+    [InlineData(@"{false: 5}[false]", 5L)]
+    public void Evaluate_HashLiteralIndexOperator_GetsExpectedValueFromHash<T>(string input, T? expectedValue)
+    {
+        var evaluated = TestEval(input);
+        Assert.NotNull(evaluated);
+        AssertCheckObject(evaluated, expectedValue);
+    }
+
+    private static IRuntimeObject? TestEval(string input, bool errorCheck = true)
     {
         Lexer lexer = new(input);
         Parser parser = new(lexer); 
         Environment env = new();
         var program = parser.ParseProgram();
         var evaluated = Evaluator.Evaluate(program, env);
+        if (errorCheck && evaluated is RuntimeErrorObject error)
+        {
+            Assert.Fail($"!!EVALUATOR ERROR!!\nMessage: {error.Message ?? "--empty error message--"}");
+        }
         return evaluated;
     }
 
